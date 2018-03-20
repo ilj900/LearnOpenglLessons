@@ -143,20 +143,20 @@ unsigned int shaderManager::use(std::string name)
     return 0;
 }
 
-void shaderManager::setBool(const std::string *name, bool value)
+void shaderManager::setBool(const std::string name, bool value)
 {
     if (currentShaderProgram != 0)
-        glUniform1i(glGetUniformLocation(currentShaderProgram, name->c_str()), (int)value);
+        glUniform1i(glGetUniformLocation(currentShaderProgram, name.c_str()), (int)value);
 }
 
-void shaderManager::setInt(const std::string *name, int value)
+void shaderManager::setInt(const std::string name, int value)
 {
     if (currentShaderProgram != 0)
-        glUniform1i(glGetUniformLocation(currentShaderProgram, name->c_str()), value);
+        glUniform1i(glGetUniformLocation(currentShaderProgram, name.c_str()), value);
 }
 
-void shaderManager::setFloat(const std::string *name, float value)
+void shaderManager::setFloat(const std::string name, float value)
 {
     if (currentShaderProgram != 0)
-        glUniform1f(glGetUniformLocation(currentShaderProgram, name->c_str()), value);
+        glUniform1f(glGetUniformLocation(currentShaderProgram, name.c_str()), value);
 }
