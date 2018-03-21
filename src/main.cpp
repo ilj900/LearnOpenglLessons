@@ -14,16 +14,17 @@ void querryGlParams();
 
 float vertices[] = {
     // positions       // colors         // texture coords
-    0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-   -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f // top left
+    0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.6f, 0.6f, // top right
+    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.6f, 0.4f, // bottom right
+   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.4f, 0.4f, // bottom left
+   -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.4f, 0.6f // top left
 };
 
 unsigned int indices[] = {
     0, 1, 3,
     1, 2, 3
 };
+float mixVal = 0.0;
 
 int main()
 {
@@ -87,8 +88,8 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
@@ -129,6 +130,7 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
         shaderManager::use();
         glBindVertexArray(VAO);
+        shaderManager::setFloat("mixVal", mixVal);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
@@ -147,6 +149,10 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && mixVal < 1.0)
+        mixVal+=0.01;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && mixVal > 0.0)
+        mixVal-=0.01;
 }
 
 void querryGlParams()
