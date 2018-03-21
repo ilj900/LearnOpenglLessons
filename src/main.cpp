@@ -68,6 +68,8 @@ int main()
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    float offset = 0.0f;
+    float step = 0.005;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -77,6 +79,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
         shaderManager::use();
         glBindVertexArray(VAO);
+        offset += step;
+        if (offset > 0.5 || offset < -0.5)
+            step = -step;
+        shaderManager::setFloat("offsetX", offset);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);

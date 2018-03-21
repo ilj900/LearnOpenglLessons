@@ -20,9 +20,9 @@ public:
     static unsigned int setCurrentShaderProgram(std::string name);
     static void querryGlParam(unsigned int param, std::string explanaition);
     static void checkForErrors(unsigned int ID);
-    static void setBool(const std::string *name, bool value);
-    static void setInt(const std::string *name, int value);
-    static void setFloat(const std::string *name, float value);
+    static void setBool(const std::string name, bool value);
+    static void setInt(const std::string name, int value);
+    static void setFloat(const std::string name, float value);
     static void use();
     static unsigned int use(std::string name);
 
