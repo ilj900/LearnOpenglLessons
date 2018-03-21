@@ -10,7 +10,7 @@ link_directories(libs)
 
 set(SOURCES src/main.cpp src/glad.c)
 set(INCLUDES include/glfw3.h)
-set(RESOURCES res/shaders/vertex.shader res/shaders/fragment.shader)
+set(RESOURCES res/shaders/vertex.shader res/shaders/fragment_red.shader res/shaders/fragment_yellow.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 

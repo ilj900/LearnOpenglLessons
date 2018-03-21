@@ -12,13 +12,10 @@ int readFromFile(const std::string path, char **src, int *size);
 float vertices[] = {
      0.5f,  0.5f, 0.0f,
      0.5f, -0.5f, 0.0f,
+    -0.5f,  0.5f, 0.0f,
+     0.5f, -0.5f, 0.0f,
     -0.5f, -0.5f, 0.0f,
     -0.5f,  0.5f, 0.0f
-};
-
-unsigned int indices[] = {
-    0, 1, 3,
-    1, 2, 3
 };
 
 int main()
@@ -48,92 +45,81 @@ int main()
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    char *vSrc, *fSrc;
+    char *vSrc, *fSrcRed, *fSrcYellow;
     int size;
     if(readFromFile("./res/shaders/vertex.shader", &vSrc, &size) == 0)
         return -1;
-    if(readFromFile("./res/shaders/fragment.shader", &fSrc, &size) == 0)
+    if(readFromFile("./res/shaders/fragment_red.shader", &fSrcRed, &size) == 0)
+        return -1;
+    if(readFromFile("./res/shaders/fragment_yellow.shader", &fSrcYellow, &size) == 0)
         return -1;
 
-    unsigned int vertexShader, fragmentShader;
+    unsigned int vertexShader, fragmentShaderRed, fragmentShaderYellow;
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    fragmentShaderRed = glCreateShader(GL_FRAGMENT_SHADER);
+    fragmentShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
 
     glShaderSource(vertexShader, 1, &vSrc, NULL);
     glCompileShader(vertexShader);
     delete vSrc;
 
-    glShaderSource(fragmentShader, 1, &fSrc, NULL);
-    glCompileShader(fragmentShader);
-    delete fSrc;
+    glShaderSource(fragmentShaderRed, 1, &fSrcRed, NULL);
+    glCompileShader(fragmentShaderRed);
+    delete fSrcRed;
 
-    int successV, successF;
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &successV);
-    if (!successV)
-    {
-        char infoLog[1024];
-        glGetShaderInfoLog(vertexShader, 1024, NULL, infoLog);
-        std::cout<<"SHADER COMPILATION ERROR: "<<infoLog<<std::endl;
-        glDeleteShader(vertexShader);
-        return -1;
-    }
+    glShaderSource(fragmentShaderYellow, 1, &fSrcYellow, NULL);
+    glCompileShader(fragmentShaderYellow);
+    delete fSrcYellow;
 
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &successF);
-    if (!successF)
-    {
-        char infoLog[1024];
-        glGetShaderInfoLog(fragmentShader, 1024, NULL, infoLog);
-        std::cout<<"SHADER COMPILATION ERROR: "<<infoLog<<std::endl;
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        return -1;
-    }
+    unsigned int programR = glCreateProgram();
+    unsigned int programY = glCreateProgram();
+    glAttachShader(programR, vertexShader);
+    glAttachShader(programR, fragmentShaderRed);
+    glLinkProgram(programR);
 
-    unsigned int program = glCreateProgram();
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    glLinkProgram(program);
+    glAttachShader(programY, vertexShader);
+    glAttachShader(programY, fragmentShaderYellow);
+    glLinkProgram(programY);
 
-    int success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        char infoLog[1024];
-        glGetProgramInfoLog(program, 1024, NULL, infoLog);
-        std::cout<<"PROGRAM LINKING ERROR: "<<infoLog<<std::endl;
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        glDeleteProgram(program);
-        return -1;
-    }
     glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    glUseProgram(program);
+    glDeleteShader(fragmentShaderRed);
+    glDeleteShader(fragmentShaderYellow);
 
     glViewport(0, 0, 800, 600);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-    unsigned int VBO, VAO, EBO;
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glUseProgram(programR);
+    unsigned int VBO1, VAO1;
+    glGenBuffers(1, &VBO1);
+    glGenVertexArrays(1, &VAO1);
+    glBindVertexArray(VAO1);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+    glBufferData(GL_ARRAY_BUFFER, 9*sizeof(float), &vertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glUseProgram(programY);
+    unsigned int VBO2, VAO2;
+    glGenBuffers(1, &VBO2);
+    glGenVertexArrays(1, &VAO2);
+    glBindVertexArray(VAO2);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+    glBufferData(GL_ARRAY_BUFFER, 9*sizeof(float), &vertices[9], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
 
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
 
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(program);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glUseProgram(programR);
+        glBindVertexArray(VAO1);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glUseProgram(programY);
+        glBindVertexArray(VAO2);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
