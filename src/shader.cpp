@@ -132,6 +132,11 @@ void shaderManager::use()
         glUseProgram(currentShaderProgram);
 }
 
+unsigned int shaderManager::getCurrentProgramm()
+{
+    return currentShaderProgram;
+}
+
 unsigned int shaderManager::use(std::string name)
 {
     for (unsigned int i = 0; i< shaderStorage.size(); i++)
@@ -159,4 +164,10 @@ void shaderManager::setFloat(const std::string name, float value)
 {
     if (currentShaderProgram != 0)
         glUniform1f(glGetUniformLocation(currentShaderProgram, name.c_str()), value);
+}
+
+void shaderManager::setMat4(const std::string name, float *values)
+{
+    if (currentShaderProgram != 0)
+        glUniformMatrix4fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, GL_FALSE, values);
 }
