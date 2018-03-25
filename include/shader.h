@@ -26,6 +26,7 @@ public:
     static void setMat4(const std::string name, float *values);
     static void use();
     static unsigned int use(std::string name);
+    static unsigned int setAndUse(std::string name);
     static unsigned int getCurrentProgramm();
 
 private:

@@ -148,6 +148,18 @@ unsigned int shaderManager::use(std::string name)
     return 0;
 }
 
+unsigned int shaderManager::setAndUse(std::string name)
+{
+    for (unsigned int i = 0; i< shaderStorage.size(); i++)
+        if (strcmp(name.c_str(), shaderStorage[i].name.c_str()) == 0)
+        {
+            glUseProgram(shaderStorage[i].ID);
+            currentShaderProgram = shaderStorage[i].ID;
+            return shaderStorage[i].ID;
+        }
+    return 0;
+}
+
 void shaderManager::setBool(const std::string name, bool value)
 {
     if (currentShaderProgram != 0)
