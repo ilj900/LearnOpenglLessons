@@ -51,9 +51,11 @@ void camera::rotate(float yaw, float pitch, float roll)
 
 void camera::move(float dForward, float dRight, float dUp)
 {
-    cameraPos += cameraFront*dForward;
-    cameraPos += cameraRight*dRight;
-    cameraPos += cameraUp*dUp;
+    glm::vec3 projectedFront = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
+    glm::vec3 projectedRight = glm::normalize(glm::vec3(cameraRight.x, 0.0f, cameraRight.z));
+    cameraPos += projectedFront*dForward;
+    cameraPos += projectedRight*dRight;
+    //cameraPos += cameraUp*dUp;
 }
 
 void camera::instantMove(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right)
@@ -75,7 +77,22 @@ void camera::zoom(float d)
 
 glm::mat4 camera::getViewMatrix()
 {
-    return glm::lookAt(cameraPos, cameraPos+cameraFront, cameraUp);
+    glm::mat4 rotation(1.0f);
+    rotation[0][0] = cameraRight.x;
+    rotation[1][0] = cameraRight.y;
+    rotation[2][0] = cameraRight.z;
+    rotation[0][1] = cameraUp.x;
+    rotation[1][1] = cameraUp.y;
+    rotation[2][1] = cameraUp.z;
+    rotation[0][2] = -cameraFront.x;
+    rotation[1][2] = -cameraFront.y;
+    rotation[2][2] = -cameraFront.z;
+    glm::mat4 translation(1.0f);
+    translation[3][0] = -cameraPos.x;
+    translation[3][1] = -cameraPos.y;
+    translation[3][2] = -cameraPos.z;
+    return rotation*translation;
+    ///return glm::lookAt(cameraPos, cameraPos+cameraFront, cameraUp);
 }
 
 glm::mat4 camera::getProjection()

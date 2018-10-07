@@ -64,6 +64,32 @@ float vertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
+float lineGrid[] =
+{
+    10.0f, 0.0f,  10.0f,  10.0f, 0.0f, -10.0f,
+    8.0f,  0.0f,  10.0f,  8.0f,  0.0f, -10.0f,
+    6.0f,  0.0f,  10.0f,  6.0f,  0.0f, -10.0f,
+    4.0f,  0.0f,  10.0f,  4.0f,  0.0f, -10.0f,
+    2.0f,  0.0f,  10.0f,  2.0f,  0.0f, -10.0f,
+    0.0f,  0.0f,  10.0f,  0.0f,  0.0f, -10.0f,
+   -2.0f,  0.0f,  10.0f, -2.0f,  0.0f, -10.0f,
+   -4.0f,  0.0f,  10.0f, -4.0f,  0.0f, -10.0f,
+   -6.0f,  0.0f,  10.0f, -6.0f,  0.0f, -10.0f,
+   -8.0f,  0.0f,  10.0f, -8.0f,  0.0f, -10.0f,
+   -10.0f, 0.0f,  10.0f, -10.0f, 0.0f, -10.0f,
+    10.0f, 0.0f,  10.0f, -10.0f, 0.0f,  10.0f,
+    10.0f, 0.0f,  8.0f,  -10.0f, 0.0f,  8.0f,
+    10.0f, 0.0f,  6.0f,  -10.0f, 0.0f,  6.0f,
+    10.0f, 0.0f,  4.0f,  -10.0f, 0.0f,  4.0f,
+    10.0f, 0.0f,  2.0f,  -10.0f, 0.0f,  2.0f,
+    10.0f, 0.0f,  0.0f,  -10.0f, 0.0f,  0.0f,
+    10.0f, 0.0f, -2.0f,  -10.0f, 0.0f, -2.0f,
+    10.0f, 0.0f, -4.0f,  -10.0f, 0.0f, -4.0f,
+    10.0f, 0.0f, -6.0f,  -10.0f, 0.0f, -6.0f,
+    10.0f, 0.0f, -8.0f,  -10.0f, 0.0f, -8.0f,
+    10.0f, 0.0f, -10.0f, -10.0f, 0.0f, -10.0f
+};
+
 glm::vec3 cubePositions[] = {
   glm::vec3( 0.0f,  0.0f,  0.0f),
   glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -116,7 +142,7 @@ int main()
         return -1;
 
     shaderManager::setCurrentShaderProgram("Simple Shader");
-    cam = new camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
+    cam = new camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
 
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -132,6 +158,17 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    unsigned int gridVBO, gridVAO;
+    glGenBuffers(1, &gridVBO);
+    glGenVertexArrays(1, &gridVAO);
+    glBindVertexArray(gridVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lineGrid), lineGrid, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
 
     int width, height, nrOfChannels;
     stbi_set_flip_vertically_on_load(true);
@@ -190,6 +227,7 @@ int main()
         glm::mat4 view = cam->getViewMatrix();
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setBool("drawLines", false);
         for(unsigned int i = 0, iter = sizeof(cubePositions)/sizeof(glm::vec3); i < iter; i++)
         {
             glm::mat4 model(1.0f);
@@ -201,6 +239,9 @@ int main()
             shaderManager::setMat4("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+        glBindVertexArray(gridVAO);
+        shaderManager::setBool("drawLines", true);
+        glDrawArrays(GL_LINES, 0, 44);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -246,7 +287,7 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         cam->rotate(0.0f, 0.0f, -0.01f);
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        cam->instantMove(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        cam->instantMove(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
