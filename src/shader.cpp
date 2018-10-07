@@ -183,3 +183,15 @@ void shaderManager::setMat4(const std::string name, float *values)
     if (currentShaderProgram != 0)
         glUniformMatrix4fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, GL_FALSE, values);
 }
+
+void shaderManager::setVec3(const std::string name, float *values)
+{
+    if (currentShaderProgram != 0)
+        glUniform3fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, values);
+}
+
+void shaderManager::setVec4(const std::string name, float *values)
+{
+    if (currentShaderProgram != 0)
+        glUniform4fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, values);
+}
