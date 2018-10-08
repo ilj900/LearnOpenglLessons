@@ -178,6 +178,12 @@ void shaderManager::setFloat(const std::string name, float value)
         glUniform1f(glGetUniformLocation(currentShaderProgram, name.c_str()), value);
 }
 
+void shaderManager::setMat3(const std::string name, float *values)
+{
+    if (currentShaderProgram != 0)
+        glUniformMatrix3fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, GL_FALSE, values);
+}
+
 void shaderManager::setMat4(const std::string name, float *values)
 {
     if (currentShaderProgram != 0)

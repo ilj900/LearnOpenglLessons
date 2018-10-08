@@ -15,50 +15,51 @@ void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void querryGlParams();
+GLFWmonitor* getMonitor();
 camera *cam;
 
 float vertices[] = {
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-    -0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
-    -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f,
-    -0.5f, -0.5f,  0.5f,
-    -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-    -0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
 float lineGrid[] =
@@ -89,16 +90,19 @@ float lineGrid[] =
 
 static int frameWidth = 800;
 static int frameHeight = 600;
+int monitor = 1;
 
 int main()
 {
-
     glfwInit();
+
+    GLFWmonitor *bestMonitor = getMonitor();
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpwnGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(frameWidth, frameHeight, "LearnOpwnGL", bestMonitor, NULL);
     if (window == NULL)
     {
         const char *description;
@@ -126,6 +130,8 @@ int main()
         return -1;
     if (!shaderManager::addShadervf("./res/shaders/light.vertex.shader", "./res/shaders/light.fragment.shader", "Light Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/grid.vertex.shader", "./res/shaders/grid.fragment.shader", "Grid Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
 
@@ -139,15 +145,17 @@ int main()
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
     unsigned int lightVAO;
     glGenVertexArrays(1, &lightVAO);
     glBindVertexArray(lightVAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
@@ -165,6 +173,8 @@ int main()
     glm::vec3 objectPosition(-1.0f, 1.0f, -1.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
     glm::vec3 lightPosition(1.2f, 1.0f, 2.0f);
+    glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
+    float ambientStrength = 0.1f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -174,27 +184,35 @@ int main()
         glm::mat4 projection = cam->getProjection();
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 model(1.0f);
+        glm::vec3 camPos = cam->getPosition();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shaderManager::setCurrentShaderProgram("Simple Shader");
-        shaderManager::use();
-        model = glm::translate(model, objectPosition);
+        shaderManager::setAndUse("Grid Shader");
+        shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setBool("drawLines", false);
+        shaderManager::setVec3("gridColor", glm::value_ptr(gridColor));
+        glBindVertexArray(gridVAO);
+        glDrawArrays(GL_LINES, 0, 44);
+
+        shaderManager::setAndUse("Simple Shader");
+        model = glm::translate(model, objectPosition);
+        ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
+        glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
+        shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
         shaderManager::setVec3("cubeColor", glm::value_ptr(objectsColor));
         shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
-        shaderManager::setMat4("model", glm::value_ptr(model));
+        shaderManager::setFloat("ambientStrength", ambientStrength);
+        shaderManager::setVec3("lightPos", glm::value_ptr(lightPosition));
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        glBindVertexArray(gridVAO);
-        shaderManager::setBool("drawLines", true);
-        glDrawArrays(GL_LINES, 0, 44);
-
-        shaderManager::setCurrentShaderProgram("Light Shader");
-        shaderManager::use();
+        shaderManager::setAndUse("Light Shader");
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
@@ -207,6 +225,9 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteVertexArrays(1, &gridVAO);
+    glDeleteVertexArrays(1, &lightVAO);
     glfwTerminate();
     return 0;
 }
@@ -278,4 +299,19 @@ void querryGlParams()
     for (unsigned int i = 0; i < sizeof(params)/sizeof(int); i++)
         shaderManager::querryGlParam(params[i], explanations[i]);
 
+}
+
+GLFWmonitor* getMonitor()
+{
+    int count;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    GLFWmonitor* chosenMonitor;
+    if (monitor < count)
+        chosenMonitor = monitors[monitor];
+    else
+        chosenMonitor = monitors[count-1];
+    const GLFWvidmode *mode = glfwGetVideoMode(chosenMonitor);
+    frameWidth = mode->width;
+    frameHeight = mode->height;
+    return chosenMonitor;
 }

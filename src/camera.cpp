@@ -82,3 +82,8 @@ glm::mat4 camera::getProjection()
 {
     return glm::perspective(fov, screenWidth/screenHeight, nearClipPlane, farClipPlane);
 }
+
+glm::vec3 camera::getPosition()
+{
+    return cameraPos;
+}
