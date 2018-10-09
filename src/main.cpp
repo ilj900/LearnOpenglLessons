@@ -170,9 +170,9 @@ int main()
     glBindVertexArray(0);
 
     glm::vec3 objectsColor(1.0f, 0.5f, 0.31f);
-    glm::vec3 objectPosition(-1.0f, 1.0f, -1.0f);
+    glm::vec3 objectPosition(-1.0f, 0.5f, -1.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightPosition(1.2f, 0.5f, 2.0f);
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
     float ambientStrength = 0.1f;
 
@@ -186,6 +186,13 @@ int main()
         glm::mat4 model(1.0f);
         glm::vec3 camPos = cam->getPosition();
 
+        ///Some nasty rotations!!
+        glm::vec3 relativeLightPos = lightPosition - objectPosition;
+        glm::mat4 rotation(1.0f);
+        rotation = glm::rotate(rotation, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        relativeLightPos = glm::vec3(rotation * glm::vec4(relativeLightPos, 0.0f));
+        relativeLightPos = objectPosition + relativeLightPos;
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderManager::setAndUse("Grid Shader");
@@ -197,6 +204,7 @@ int main()
         glDrawArrays(GL_LINES, 0, 44);
 
         shaderManager::setAndUse("Simple Shader");
+        model = glm::mat4(1.0);
         model = glm::translate(model, objectPosition);
         ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
         glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
@@ -208,7 +216,7 @@ int main()
         shaderManager::setVec3("cubeColor", glm::value_ptr(objectsColor));
         shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
         shaderManager::setFloat("ambientStrength", ambientStrength);
-        shaderManager::setVec3("lightPos", glm::value_ptr(lightPosition));
+        shaderManager::setVec3("lightPos", glm::value_ptr(relativeLightPos));
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -216,7 +224,8 @@ int main()
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
-        model = glm::translate(model, lightPosition);
+        model = glm::mat4(1.0);
+        model = glm::translate(model, relativeLightPos);
         model = glm::scale(model, glm::vec3(0.1f));
         shaderManager::setMat4("model", glm::value_ptr(model));
         glBindVertexArray(lightVAO);
