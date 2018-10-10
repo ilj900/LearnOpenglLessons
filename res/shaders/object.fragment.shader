@@ -7,27 +7,27 @@ uniform vec3 lightColor;
 uniform vec3 cubeColor;
 uniform float ambientStrength;
 uniform vec3 lightPos;
-uniform vec3 viewPos;
 
 out vec4 FragColor;
 
 void main()
 {
     vec3 norm = normalize(Normal);
+    vec3 LightDir = normalize(lightPos - fragPos);
+    float angleNormLight = dot(norm, LightDir);
 
     //ambient
     vec3 ambient = lightColor * ambientStrength;
 
     //diffuse
-    vec3 LightDir = normalize(lightPos - fragPos);
-    float diff = max(dot(norm, LightDir), 0.0);
+    float diff = max(angleNormLight, 0.0);
     vec3 diffuse = diff * lightColor;
 
     //specular
     float specularStrength = 1.0;
-    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 viewDir = normalize(-fragPos);
     float spec;
-    if (dot(norm, LightDir) <= 0.0)                                 //We have to calculate the angle between normal and light direction.
+    if (angleNormLight <= 0.0)                                 //We have to calculate the angle between normal and light direction.
         spec = 0.0;                                                 //Or we'll have some false specular light, when the angle between reflected light direction
     else                                                            //and view direction is less that M_PI_2, though the angle between normal and
     {                                                               //light is more that M_PI_2, which means that fragment is not illuminated

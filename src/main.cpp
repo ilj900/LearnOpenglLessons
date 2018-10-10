@@ -184,7 +184,6 @@ int main()
         glm::mat4 projection = cam->getProjection();
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 model(1.0f);
-        glm::vec3 camPos = cam->getPosition();
 
         ///Some nasty rotations!!
         glm::vec3 relativeLightPos = lightPosition - objectPosition;
@@ -203,23 +202,6 @@ int main()
         glBindVertexArray(gridVAO);
         glDrawArrays(GL_LINES, 0, 44);
 
-        shaderManager::setAndUse("Simple Shader");
-        model = glm::mat4(1.0);
-        model = glm::translate(model, objectPosition);
-        ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
-        glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        shaderManager::setMat4("view", glm::value_ptr(view));
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
-        shaderManager::setVec3("cubeColor", glm::value_ptr(objectsColor));
-        shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
-        shaderManager::setFloat("ambientStrength", ambientStrength);
-        shaderManager::setVec3("lightPos", glm::value_ptr(relativeLightPos));
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
         shaderManager::setAndUse("Light Shader");
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
@@ -229,6 +211,23 @@ int main()
         model = glm::scale(model, glm::vec3(0.1f));
         shaderManager::setMat4("model", glm::value_ptr(model));
         glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        shaderManager::setAndUse("Simple Shader");
+        model = glm::mat4(1.0);
+        model = glm::translate(model, objectPosition);
+        ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
+        glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
+        shaderManager::setVec3("cubeColor", glm::value_ptr(objectsColor));
+        shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
+        shaderManager::setFloat("ambientStrength", ambientStrength);
+        glm::vec3 viewLightPos(view * glm::vec4(relativeLightPos, 1.0));
+        shaderManager::setVec3("lightPos", glm::value_ptr(viewLightPos));
+        glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
