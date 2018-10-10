@@ -188,7 +188,7 @@ int main()
         ///Some nasty rotations!!
         glm::vec3 relativeLightPos = lightPosition - objectPosition;
         glm::mat4 rotation(1.0f);
-        rotation = glm::rotate(rotation, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotation = glm::rotate(rotation, (float)glfwGetTime() * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));
         relativeLightPos = glm::vec3(rotation * glm::vec4(relativeLightPos, 0.0f));
         relativeLightPos = objectPosition + relativeLightPos;
 
