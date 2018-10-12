@@ -1,12 +1,26 @@
 #version 330 core
 
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
+
+struct Light
+{
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 in vec3 Normal;
 in vec3 fragPos;
 
-uniform vec3 lightColor;
-uniform vec3 cubeColor;
-uniform float ambientStrength;
-uniform vec3 lightPos;
+uniform Material material;
+uniform Light light;
 uniform vec3 viewPos;
 
 out vec4 FragColor;
@@ -14,30 +28,27 @@ out vec4 FragColor;
 void main()
 {
     vec3 norm = normalize(Normal);
-
-    //ambient
-    vec3 ambient = lightColor * ambientStrength;
+    vec3 LightDir = normalize(light.position - fragPos);
+    float angle = dot(norm, LightDir);
 
     //diffuse
-    vec3 LightDir = normalize(lightPos - fragPos);
-    float diff = max(dot(norm, LightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
+    float diff = max(angle, 0.0);
+    vec3 diffuse = diff * material.diffuse;
 
     //specular
-    float specularStrength = 1.0;
     vec3 viewDir = normalize(viewPos - fragPos);
     float spec;
-    if (dot(norm, LightDir) <= 0.0)                                 //We have to calculate the angle between normal and light direction.
-        spec = 0.0;                                                 //Or we'll have some false specular light, when the angle between reflected light direction
-    else                                                            //and view direction is less that M_PI_2, though the angle between normal and
-    {                                                               //light is more that M_PI_2, which means that fragment is not illuminated
+    if (angle <= 0.0)                                                       //We have to calculate the angle between normal and light direction.
+        spec = 0.0;                                                         //Or we'll have some false specular light, when the angle between reflected light direction
+    else                                                                    //and view direction is less that M_PI_2, though the angle between normal and
+    {                                                                       //light is more that M_PI_2, which means that fragment is not illuminated
         vec3 reflectDir = normalize(reflect(-LightDir, norm));
-        spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     }
-    vec3 specular = specularStrength * spec * lightColor;
+    vec3 specular = material.specular * spec;
 
     vec3 result;
-    result = (ambient + diffuse + specular) * cubeColor;
+    result = material.ambient * light.ambient + diffuse * light.diffuse + specular * light.specular;
 
     FragColor = vec4(result, 1.0);
 }

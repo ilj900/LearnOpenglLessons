@@ -15,51 +15,52 @@ void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void querryGlParams();
+glm::vec3 getColor();
 GLFWmonitor* getMonitor();
 camera *cam;
 
 float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
 float lineGrid[] =
@@ -70,11 +71,11 @@ float lineGrid[] =
     4.0f,  0.0f,  10.0f,  4.0f,  0.0f, -10.0f,
     2.0f,  0.0f,  10.0f,  2.0f,  0.0f, -10.0f,
     0.0f,  0.0f,  10.0f,  0.0f,  0.0f, -10.0f,
-   -2.0f,  0.0f,  10.0f, -2.0f,  0.0f, -10.0f,
-   -4.0f,  0.0f,  10.0f, -4.0f,  0.0f, -10.0f,
-   -6.0f,  0.0f,  10.0f, -6.0f,  0.0f, -10.0f,
-   -8.0f,  0.0f,  10.0f, -8.0f,  0.0f, -10.0f,
-   -10.0f, 0.0f,  10.0f, -10.0f, 0.0f, -10.0f,
+    -2.0f,  0.0f,  10.0f, -2.0f,  0.0f, -10.0f,
+    -4.0f,  0.0f,  10.0f, -4.0f,  0.0f, -10.0f,
+    -6.0f,  0.0f,  10.0f, -6.0f,  0.0f, -10.0f,
+    -8.0f,  0.0f,  10.0f, -8.0f,  0.0f, -10.0f,
+    -10.0f, 0.0f,  10.0f, -10.0f, 0.0f, -10.0f,
     10.0f, 0.0f,  10.0f, -10.0f, 0.0f,  10.0f,
     10.0f, 0.0f,  8.0f,  -10.0f, 0.0f,  8.0f,
     10.0f, 0.0f,  6.0f,  -10.0f, 0.0f,  6.0f,
@@ -169,17 +170,20 @@ int main()
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
-    glm::vec3 objectsColor(1.0f, 0.5f, 0.31f);
     glm::vec3 objectPosition(-1.0f, 0.5f, -1.0f);
-    glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
     glm::vec3 lightPosition(1.2f, 0.5f, 2.0f);
+    glm::vec3 lightAmbient(1.0f, 1.0f, 1.0f);
+    glm::vec3 lightDiffuse(1.0f, 1.0f, 1.0f);
+    glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
+    glm::vec3 materialAmbient(0.0f, 0.1f, 0.06f);
+    glm::vec3 materialDiffuse(0.0f, 0.509804f, 0.509804f);
+    glm::vec3 materialSpecular(0.50196f, 0.50196f, 0.50196f);
+    float shininess = 32.0f;
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
-    float ambientStrength = 0.1f;
 
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
-        Sleep(16);
 
         glm::mat4 projection = cam->getProjection();
         glm::mat4 view = cam->getViewMatrix();
@@ -213,17 +217,20 @@ int main()
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
         shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
-        shaderManager::setVec3("cubeColor", glm::value_ptr(objectsColor));
-        shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
-        shaderManager::setFloat("ambientStrength", ambientStrength);
-        shaderManager::setVec3("lightPos", glm::value_ptr(relativeLightPos));
+        shaderManager::setVec3("light.ambient", glm::value_ptr(lightAmbient));
+        shaderManager::setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
+        shaderManager::setVec3("light.specular", glm::value_ptr(lightSpecular));
+        shaderManager::setVec3("light.position", glm::value_ptr(relativeLightPos));
+        shaderManager::setVec3("material.ambient", glm::value_ptr(materialAmbient));
+        shaderManager::setVec3("material.diffuse", glm::value_ptr(materialDiffuse));
+        shaderManager::setVec3("material.specular", glm::value_ptr(materialSpecular));
+        shaderManager::setFloat("material.shininess", shininess);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         shaderManager::setAndUse("Light Shader");
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setVec3("lightColor", glm::value_ptr(lightColor));
         model = glm::mat4(1.0);
         model = glm::translate(model, relativeLightPos);
         model = glm::scale(model, glm::vec3(0.1f));
@@ -233,6 +240,7 @@ int main()
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        Sleep(8);
     }
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &gridVAO);
@@ -275,9 +283,9 @@ void processInput(GLFWwindow *window)
         up -= deltaT * movementSpeed;
     cam->move(front, right, up);
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        cam->rotate(0.0f, 0.0f, 0.01f);
+        cam->rotate(0.0f, 0.0f, deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        cam->rotate(0.0f, 0.0f, -0.01f);
+        cam->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
         cam->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 }
@@ -323,4 +331,10 @@ GLFWmonitor* getMonitor()
     frameWidth = mode->width;
     frameHeight = mode->height;
     return chosenMonitor;
+}
+
+glm::vec3 getColor()
+{
+    float time = glfwGetTime();
+    return glm::vec3(sin(time * 2.0f), sin(time * 1.3f), sin(time * 0.7f));
 }
