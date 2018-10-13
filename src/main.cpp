@@ -182,6 +182,7 @@ int main()
 
     unsigned int textureDiffuse = loadTexture("./res/textures/container2.png");
     unsigned int textureSpecular = loadTexture("./res/textures/container2_specular.png");
+    unsigned int textureMatrix = loadTexture("./res/textures/matrix.jpg");
 
     glm::vec3 objectPosition(-1.0f, 0.5f, -1.0f);
     glm::vec3 lightPosition(-1.2f, 0.5f, 1.0f);
@@ -232,6 +233,9 @@ int main()
         glBindTexture(GL_TEXTURE_2D, textureDiffuse);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textureSpecular);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, textureMatrix);
+
         model = glm::mat4(1.0);
         model = glm::translate(model, objectPosition);
         ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
@@ -248,6 +252,8 @@ int main()
         shaderManager::setFloat("material.shininess", shininess);
         shaderManager::setInt("material.diffuse", 0);
         shaderManager::setInt("material.specular", 1);
+        shaderManager::setInt("material.glow", 2);
+        shaderManager::setFloat("time", (float)glfwGetTime());
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
