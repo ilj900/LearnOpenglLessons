@@ -165,6 +165,8 @@ int main()
         return -1;
     if (!shaderManager::addShadervf("./res/shaders/grid.vertex.shader", "./res/shaders/grid.fragment.shader", "Grid Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/light.vertex.shader", "./res/shaders/light.fragment.shader", "Light Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
 
@@ -186,6 +188,14 @@ int main()
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
+    unsigned int lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
     unsigned int gridVBO, gridVAO;
     glGenBuffers(1, &gridVBO);
     glGenVertexArrays(1, &gridVAO);
@@ -199,10 +209,13 @@ int main()
     unsigned int textureDiffuse = loadTexture("./res/textures/container2.png");
     unsigned int textureSpecular = loadTexture("./res/textures/container2_specular.png");
 
-    glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
+    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f);
     glm::vec3 lightAmbient(0.2f, 0.2f, 0.2f);
     glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
     glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
+    float lightConstant = 1.0f;
+    float lightLinear = 0.09;
+    float lightQuadratic = 0.032f;
     float shininess = 128.0f;
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
     static double deltaT = 0.0f;
@@ -232,6 +245,16 @@ int main()
         glBindVertexArray(gridVAO);
         glDrawArrays(GL_LINES, 0, 44);
 
+        shaderManager::setAndUse("Light Shader");
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        model = glm::mat4(1.0);
+        model = glm::translate(model, lightPosition);
+        model = glm::scale(model, glm::vec3(0.05f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
         shaderManager::setAndUse("Simple Shader");
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
@@ -241,10 +264,13 @@ int main()
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setVec3("directional_light.direction", glm::value_ptr(lightDirection));
-        shaderManager::setVec3("directional_light.ambient", glm::value_ptr(lightAmbient));
-        shaderManager::setVec3("directional_light.diffuse", glm::value_ptr(lightDiffuse));
-        shaderManager::setVec3("directional_light.specular", glm::value_ptr(lightSpecular));
+        shaderManager::setVec3("light.position", glm::value_ptr(lightPosition));
+        shaderManager::setVec3("light.ambient", glm::value_ptr(lightAmbient));
+        shaderManager::setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
+        shaderManager::setVec3("light.specular", glm::value_ptr(lightSpecular));
+        shaderManager::setFloat("light.constant", lightConstant);
+        shaderManager::setFloat("light.linear", lightLinear);
+        shaderManager::setFloat("light.quadratic", lightQuadratic);
         shaderManager::setFloat("material.shininess", shininess);
         shaderManager::setInt("material.diffuse", 0);
         shaderManager::setInt("material.specular", 1);
@@ -282,8 +308,6 @@ void processInput(GLFWwindow *window)
     static float lastInput = 0.0f;
     static float currentInput = 0.0f;
     static float movementSpeed = 4.5f;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
 
     currentInput = glfwGetTime();
     float deltaT = currentInput - lastInput;
@@ -315,6 +339,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         lightSourceMovement = !lightSourceMovement;
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 
 }
 
