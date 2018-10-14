@@ -70,6 +70,32 @@ float vertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 };
 
+glm::vec3 cubePositions[] = {
+    glm::vec3( 0.0f,  0.0f,  0.0f),
+    glm::vec3( 2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3( 2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
+glm::vec3 cubeRotaionAxises[] = {
+    glm::vec3( 0.0f,  0.0f,  1.0f),
+    glm::vec3( 1.0f,  0.0f, -1.0f),
+    glm::vec3( 0.5f,  1.0f,  0.0f),
+    glm::vec3(-1.0f, -1.0f,  0.0f),
+    glm::vec3( 0.5f, -0.5f, -0.5f),
+    glm::vec3(-0.7f,  0.0f,  0.5f),
+    glm::vec3( 1.0f, -1.0f,  0.5f),
+    glm::vec3( 1.0f,  0.1f, -0.5f),
+    glm::vec3( 1.0f,  0.2f, -0.5f),
+    glm::vec3(-1.0f,  1.0f,  0.5f)
+};
+
 float lineGrid[] =
 {
     10.0f, 0.0f,  10.0f,  10.0f, 0.0f, -10.0f,
@@ -137,8 +163,6 @@ int main()
 
     if (!shaderManager::addShadervf("./res/shaders/object.vertex.shader", "./res/shaders/object.fragment.shader", "Simple Shader"))
         return -1;
-    if (!shaderManager::addShadervf("./res/shaders/light.vertex.shader", "./res/shaders/light.fragment.shader", "Light Shader"))
-        return -1;
     if (!shaderManager::addShadervf("./res/shaders/grid.vertex.shader", "./res/shaders/grid.fragment.shader", "Grid Shader"))
         return -1;
 
@@ -162,14 +186,6 @@ int main()
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
-    unsigned int lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-
     unsigned int gridVBO, gridVAO;
     glGenBuffers(1, &gridVBO);
     glGenVertexArrays(1, &gridVAO);
@@ -183,12 +199,11 @@ int main()
     unsigned int textureDiffuse = loadTexture("./res/textures/container2.png");
     unsigned int textureSpecular = loadTexture("./res/textures/container2_specular.png");
 
-    glm::vec3 objectPosition(-1.0f, 0.5f, -1.0f);
-    glm::vec3 lightPosition(-1.2f, 0.5f, 1.0f);
+    glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
     glm::vec3 lightAmbient(0.2f, 0.2f, 0.2f);
     glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
     glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-    float shininess = 64.0f;
+    float shininess = 128.0f;
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
     static double deltaT = 0.0f;
     static double currentFrame = 0.0f;
@@ -207,16 +222,6 @@ int main()
         glm::mat4 model(1.0f);
         glm::vec3 camPos = cam->getPosition();
 
-        ///Some nasty rotations!!
-        static double angle = 0.0f;
-        if(lightSourceMovement)
-            angle += deltaT;
-        glm::vec3 relativeLightPos = lightPosition - objectPosition;
-        glm::mat4 rotation(1.0f);
-        rotation = glm::rotate(rotation, (float)angle, glm::vec3(0.0f, 1.0f, 0.0f));
-        relativeLightPos = glm::vec3(rotation * glm::vec4(relativeLightPos, 0.0f));
-        relativeLightPos = objectPosition + relativeLightPos;
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderManager::setAndUse("Grid Shader");
@@ -228,38 +233,32 @@ int main()
         glDrawArrays(GL_LINES, 0, 44);
 
         shaderManager::setAndUse("Simple Shader");
+        glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureDiffuse);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textureSpecular);
-        model = glm::mat4(1.0);
-        model = glm::translate(model, objectPosition);
-        ///Here might be a possible problem. I don't know how exactly glm creates 3x3 matrix from 4x4, hope it just takes an upper-left 3x3 from 4x4.
-        glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
-        shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
-        shaderManager::setVec3("light.ambient", glm::value_ptr(lightAmbient));
-        shaderManager::setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
-        shaderManager::setVec3("light.specular", glm::value_ptr(lightSpecular));
-        shaderManager::setVec3("light.position", glm::value_ptr(relativeLightPos));
+        shaderManager::setVec3("directional_light.direction", glm::value_ptr(lightDirection));
+        shaderManager::setVec3("directional_light.ambient", glm::value_ptr(lightAmbient));
+        shaderManager::setVec3("directional_light.diffuse", glm::value_ptr(lightDiffuse));
+        shaderManager::setVec3("directional_light.specular", glm::value_ptr(lightSpecular));
         shaderManager::setFloat("material.shininess", shininess);
         shaderManager::setInt("material.diffuse", 0);
         shaderManager::setInt("material.specular", 1);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        shaderManager::setAndUse("Light Shader");
-        shaderManager::setMat4("view", glm::value_ptr(view));
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
-        model = glm::mat4(1.0);
-        model = glm::translate(model, relativeLightPos);
-        model = glm::scale(model, glm::vec3(0.1f));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            model = glm::mat4(1.0);
+            model = glm::translate(model, cubePositions[i]);
+            model = glm::rotate(model, (float)glfwGetTime()*0.3f*(float)(i+1), cubeRotaionAxises[i]);
+            shaderManager::setMat4("model", glm::value_ptr(model));
+            glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
+            shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -267,7 +266,6 @@ int main()
     }
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &gridVAO);
-    glDeleteVertexArrays(1, &lightVAO);
     glfwTerminate();
     return 0;
 }
