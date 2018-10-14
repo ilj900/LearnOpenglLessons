@@ -87,3 +87,8 @@ glm::vec3 camera::getPosition()
 {
     return cameraPos;
 }
+
+glm::vec3 camera::getDirection()
+{
+    return cameraFront;
+}
