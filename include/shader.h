@@ -25,6 +25,7 @@ public:
     static void setFloat(const std::string name, float value);
     static void setMat3(const std::string name, float *values);
     static void setMat4(const std::string name, float *values);
+    static void setVec2(const std::string name, float *values);
     static void setVec3(const std::string name, float *values);
     static void setVec4(const std::string name, float *values);
     static void use();

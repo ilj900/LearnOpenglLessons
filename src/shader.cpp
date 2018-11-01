@@ -190,6 +190,12 @@ void shaderManager::setMat4(const std::string name, float *values)
         glUniformMatrix4fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, GL_FALSE, values);
 }
 
+void shaderManager::setVec2(const std::string name, float *values)
+{
+    if (currentShaderProgram != 0)
+        glUniform2fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, values);
+}
+
 void shaderManager::setVec3(const std::string name, float *values)
 {
     if (currentShaderProgram != 0)
