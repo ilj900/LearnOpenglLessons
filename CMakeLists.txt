@@ -9,8 +9,17 @@ set (CMAKE_CXX_STANDARD 11)
 include_directories(include)
 link_directories(libs)
 
-set(SOURCES src/main.cpp src/glad.c src/shader.cpp src/camera.cpp)
-set(INCLUDES include/glfw3.h include/shader.h include/camera.h include/stb_image.h)
+set(SOURCES src/main.cpp
+            src/glad.c
+            src/shader.cpp
+            src/camera.cpp
+            src/textOutput.cpp)
+set(INCLUDES    include/glfw3.h
+                include/main.h
+                include/shader.h
+                include/camera.h
+                include/textOutput.h
+                include/stb_image.h)
 set(RESOURCES   res/shaders/object.vertex.shader    res/shaders/object.fragment.shader
                 res/shaders/light.vertex.shader     res/shaders/light.fragment.shader
                 res/shaders/grid.vertex.shader      res/shaders/grid.fragment.shader

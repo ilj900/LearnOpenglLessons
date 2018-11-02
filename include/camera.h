@@ -1,3 +1,6 @@
+#ifndef CAMERA_H
+#define CAMERA_H
+
 #include "glm/glm.hpp"
 
 class camera
@@ -26,3 +29,5 @@ public:
     glm::vec3 getPosition();
     glm::vec3 getDirection();
 };
+
+#endif

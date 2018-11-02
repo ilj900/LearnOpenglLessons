@@ -2,7 +2,7 @@
 layout (location = 0) in vec2 vertex;
 layout (location = 1) in vec4 texture;
 
-out vec4 TexGlypgCoords;
+noperspective out vec4 TexGlypgCoords;
 
 uniform mat4 projection;
 uniform vec2 pos;
