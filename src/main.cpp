@@ -23,7 +23,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 void querryGlParams();
 unsigned int loadTexture(const char * path);
-glm::vec3 getColor();
 GLFWmonitor* getMonitor();
 camera *cam;
 bool lightSourceMovement = true;
@@ -32,7 +31,9 @@ bool lightSourceMovement = true;
 
 static int frameWidth = 800;
 static int frameHeight = 600;
-int monitor = 1;
+static int monitor = SECOND_MONITOR;
+static bool vSync = true;
+static float desiredFrameLength = 1000.0f/60.0f;
 
 int main()
 {
@@ -86,6 +87,8 @@ int main()
         return -1;
     if (!shaderManager::addShadervf("./res/shaders/text.vertex.shader", "./res/shaders/text.fragment.shader", "Text Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/fps.vertex.shader", "./res/shaders/fps.fragment.shader", "FPS Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
     CHARSET *chrst = setupTreeType("fonts/arial.ttf", 64, 128);    /// I found out that symbols greater that 128 loads blank;
@@ -118,6 +121,32 @@ int main()
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
+    int numberOfFramesInFPSHistory = frameWidth*0.5;
+    int currentFrameNumber = 0;
+    unsigned int fpsVBO, fpsVAO;
+    float *innitialValues = new float[numberOfFramesInFPSHistory*2]();  ///3600 of (x, y)
+    for (int i = 0; i<numberOfFramesInFPSHistory; i++)
+        innitialValues[2*i] = i;
+    glGenBuffers(1, &fpsVBO);
+    glGenVertexArrays(1, &fpsVAO);
+    glBindVertexArray(fpsVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, fpsVBO);
+    glBufferData(GL_ARRAY_BUFFER, numberOfFramesInFPSHistory*2*sizeof(float), innitialValues, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    delete[] innitialValues;
+
+    unsigned int fpsMarkupVBO, fpsMarkupVAO;
+    glGenBuffers(1, &fpsMarkupVBO);
+    glGenVertexArrays(1, &fpsMarkupVAO);
+    glBindVertexArray(fpsMarkupVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, fpsMarkupVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fpsMarkup), fpsMarkup, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
     unsigned int textureDiffuse = loadTexture("./res/textures/container2.png");
     unsigned int textureSpecular = loadTexture("./res/textures/container2_specular.png");
 
@@ -131,9 +160,14 @@ int main()
     float outerCutOff = glm::cos(glm::radians(17.5f));
     float shininess = 128.0f;
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
-    static double deltaT = 0.0f;
-    static double currentFrame = 0.0f;
-    static double previousFrame = 0.0f;
+    static float deltaT = 0.0f;
+    static float currentFrame = 0.0f;
+    static float previousFrame = 0.0f;
+    glm::mat4 orthoProjection = glm::ortho(0.0f, (float)frameWidth, 0.0f, (float)frameHeight);
+    glm::vec2 fpsGraphPos = glm::vec2(0.0f, 0.0f);
+    glm::vec4 lineColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec4 backgroundLineColor = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+    glm::vec2 fpsScale = glm::vec2(2.0f, 3.0f);
 
     TEXT* smlMssg = generateTextData("Hell, It's about time!", chrst, 10);
     TEXT* FPStxt = generateTextData("FPS: ", chrst, 10);
@@ -141,7 +175,6 @@ int main()
     for (unsigned int i = 0; i < 10; i++)
         digitsArray[i] = generateTextData(std::to_string(i), chrst, 10);
     TEXT* dot = generateTextData(".", chrst, 10);
-
 
     while (!glfwWindowShouldClose(window))
     {
@@ -189,7 +222,6 @@ int main()
         shaderManager::setFloat("material.shininess", shininess);
         shaderManager::setInt("material.diffuse", 0);
         shaderManager::setInt("material.specular", 1);
-        glBindVertexArray(VAO);
         for (unsigned int i = 0; i < 10; i++)
         {
             model = glm::mat4(1.0);
@@ -200,13 +232,14 @@ int main()
             shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+        glBindVertexArray(0);
 
         renderText("Text Shader", smlMssg, 10.0, (float)frameHeight - smlMssg->height - 10.0, 1.0, glm::vec3(0.859375f, 0.078125f, 0.234375f), frameWidth, frameHeight);
         renderText("Text Shader", FPStxt, 10.0, (float)frameHeight - FPStxt->height - smlMssg->height - 10.0, 1.0, glm::vec3(0.859375f, 0.078125f, 0.234375f), frameWidth, frameHeight);
         float offsetX = 10 + FPStxt->width;
         float offsetY = (float)frameHeight - FPStxt->height - smlMssg->height - 10.0;
         char buff[50];
-        std::sprintf(buff, "%.2f", (float)(deltaT*1000.0));
+        std::sprintf(buff, "%i", (int)(1.0f/deltaT));
         std::string fpsStr(buff);
         for (unsigned int i = 0; i < fpsStr.size(); i++)
         {
@@ -224,10 +257,52 @@ int main()
             }
         }
 
+        shaderManager::setAndUse("FPS Shader");
+        glBindVertexArray(fpsMarkupVAO);
+        shaderManager::setBool("drawGraph", false);
+        shaderManager::setFloat("totalWidth", (float)frameWidth);
+        shaderManager::setVec4("lineColor", glm::value_ptr(backgroundLineColor));
+        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
+        glDrawArrays(GL_LINES, 0, 8);
+        glBindVertexArray(0);
 
+        float deltaMsT = 1000.0f * deltaT;
+        static bool drawSecondPart = false;
+        glBindBuffer(GL_ARRAY_BUFFER, fpsVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, (currentFrameNumber * 2 + 1) * sizeof(float), sizeof(float), &deltaMsT);   /// currentFrameNumber * 2 + 1 points at the 'y'
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        /// Now we have updated our "fifo" buffer. The only trick now is to draw it apropriately
+        shaderManager::setAndUse("FPS Shader");
+        glBindVertexArray(fpsVAO);
+        shaderManager::setBool("drawGraph", true);
+        shaderManager::setFloat("offsetX", (float)currentFrameNumber);
+        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
+        shaderManager::setVec2("pos", glm::value_ptr(fpsGraphPos));
+        shaderManager::setFloat("totalWidth", (float)numberOfFramesInFPSHistory);
+        shaderManager::setVec2("scale", glm::value_ptr(fpsScale));
+        shaderManager::setVec4("lineColor", glm::value_ptr(lineColor));
+        glPointSize(2.0f);
+        static int skipFirstdeltaFrame = 1; ///I'm skipping first frame cause it shows big frame length;
+        glDrawArrays(GL_LINE_STRIP, skipFirstdeltaFrame, std::max(currentFrameNumber-skipFirstdeltaFrame, 0));
+        if(drawSecondPart)
+        {
+            glDrawArrays(GL_LINE_STRIP, currentFrameNumber, std::max(numberOfFramesInFPSHistory-currentFrameNumber-1, 0));
+            skipFirstdeltaFrame = 0;
+        }
+        glPointSize(1.0f);
+        glBindVertexArray(0);
+
+        currentFrameNumber++;
+        if(currentFrameNumber >= numberOfFramesInFPSHistory)
+        {
+            currentFrameNumber = 0;
+            drawSecondPart = true;
+        }
         glfwSwapBuffers(window);
         glfwPollEvents();
-        Sleep(18);
+        static float nextFrame = currentFrame + desiredFrameLength;
+        static float timeToSleep = (nextFrame - glfwGetTime());
+        Sleep((int)timeToSleep);
     }
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &gridVAO);
@@ -309,7 +384,6 @@ void querryGlParams()
                                     "Maximum texture size is: "};
     for (unsigned int i = 0; i < sizeof(params)/sizeof(int); i++)
         shaderManager::querryGlParam(params[i], explanations[i]);
-
 }
 
 GLFWmonitor* getMonitor()
@@ -324,13 +398,9 @@ GLFWmonitor* getMonitor()
     const GLFWvidmode *mode = glfwGetVideoMode(chosenMonitor);
     frameWidth = mode->width;
     frameHeight = mode->height;
+    if (vSync)
+        desiredFrameLength = 1000.0/mode->refreshRate;
     return chosenMonitor;
-}
-
-glm::vec3 getColor()
-{
-    float time = glfwGetTime();
-    return glm::vec3(sin(time * 2.0f), sin(time * 1.3f), sin(time * 0.7f));
 }
 
 unsigned int loadTexture(const char * path)
