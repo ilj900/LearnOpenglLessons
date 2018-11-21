@@ -20,10 +20,8 @@ set(INCLUDES    include/glfw3.h
                 include/camera.h
                 include/textOutput.h
                 include/stb_image.h)
-set(RESOURCES   res/shaders/object.vertex.shader    res/shaders/object.fragment.shader
-                res/shaders/light.vertex.shader     res/shaders/light.fragment.shader
-                res/shaders/grid.vertex.shader      res/shaders/grid.fragment.shader
-                res/shaders/fps.vertex.shader       res/shaders/fps.fragment.shader
+set(RESOURCES   res/shaders/common.vertex.shader    res/shaders/common.fragment.shader
+                res/shaders/object.vertex.shader    res/shaders/object.fragment.shader
                 res/shaders/text.vertex.shader      res/shaders/text.fragment.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})

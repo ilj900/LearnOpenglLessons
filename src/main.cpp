@@ -25,7 +25,7 @@ void querryGlParams();
 unsigned int loadTexture(const char * path);
 GLFWmonitor* getMonitor();
 camera *cam;
-bool lightSourceMovement = true;
+bool spotlightSwitchOn = false;
 
 #include "main.h"
 
@@ -83,11 +83,9 @@ int main()
 
     if (!shaderManager::addShadervf("./res/shaders/object.vertex.shader", "./res/shaders/object.fragment.shader", "Simple Shader"))
         return -1;
-    if (!shaderManager::addShadervf("./res/shaders/grid.vertex.shader", "./res/shaders/grid.fragment.shader", "Grid Shader"))
-        return -1;
     if (!shaderManager::addShadervf("./res/shaders/text.vertex.shader", "./res/shaders/text.fragment.shader", "Text Shader"))
         return -1;
-    if (!shaderManager::addShadervf("./res/shaders/fps.vertex.shader", "./res/shaders/fps.fragment.shader", "FPS Shader"))
+    if (!shaderManager::addShadervf("./res/shaders/common.vertex.shader", "./res/shaders/common.fragment.shader", "Common Shader"))
         return -1;
 
     cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
@@ -111,63 +109,65 @@ int main()
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
+    unsigned int lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    int numberOfFramesInFrameLengthHistory = frameWidth*0.5;
+    int currentFrameNumber = 0;
+    float *innitialValues = new float[numberOfFramesInFrameLengthHistory*2]();  ///3600 of (x, y)
+    for (int i = 0; i<numberOfFramesInFrameLengthHistory; i++)
+        innitialValues[2*i] = i;
+    unsigned int frameLengthVBO, frameLengthVAO;
+    glGenBuffers(1, &frameLengthVBO);
+    glGenVertexArrays(1, &frameLengthVAO);
+    glBindVertexArray(frameLengthVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, frameLengthVBO);
+    glBufferData(GL_ARRAY_BUFFER, numberOfFramesInFrameLengthHistory*2*sizeof(float), innitialValues, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    delete[] innitialValues;
+
+    unsigned int frameLengthMarkupVBO, frameLengthMarkupVAO;
+    glGenBuffers(1, &frameLengthMarkupVBO);
+    glGenVertexArrays(1, &frameLengthMarkupVAO);
+    glBindVertexArray(frameLengthMarkupVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, frameLengthMarkupVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(frameLengthMarkup), frameLengthMarkup, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
     unsigned int gridVBO, gridVAO;
     glGenBuffers(1, &gridVBO);
     glGenVertexArrays(1, &gridVAO);
     glBindVertexArray(gridVAO);
     glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(lineGrid), lineGrid, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-
-    int numberOfFramesInFPSHistory = frameWidth*0.5;
-    int currentFrameNumber = 0;
-    unsigned int fpsVBO, fpsVAO;
-    float *innitialValues = new float[numberOfFramesInFPSHistory*2]();  ///3600 of (x, y)
-    for (int i = 0; i<numberOfFramesInFPSHistory; i++)
-        innitialValues[2*i] = i;
-    glGenBuffers(1, &fpsVBO);
-    glGenVertexArrays(1, &fpsVAO);
-    glBindVertexArray(fpsVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, fpsVBO);
-    glBufferData(GL_ARRAY_BUFFER, numberOfFramesInFPSHistory*2*sizeof(float), innitialValues, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-    delete[] innitialValues;
-
-    unsigned int fpsMarkupVBO, fpsMarkupVAO;
-    glGenBuffers(1, &fpsMarkupVBO);
-    glGenVertexArrays(1, &fpsMarkupVAO);
-    glBindVertexArray(fpsMarkupVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, fpsMarkupVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(fpsMarkup), fpsMarkup, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
     unsigned int textureDiffuse = loadTexture("./res/textures/container2.png");
     unsigned int textureSpecular = loadTexture("./res/textures/container2_specular.png");
 
-    glm::vec3 lightAmbient(0.2f, 0.2f, 0.2f);
-    glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
-    glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-    float lightConstant = 1.0f;
-    float lightLinear = 0.09;
-    float lightQuadratic = 0.032f;
-    float innerCutOff = glm::cos(glm::radians(12.5f));
-    float outerCutOff = glm::cos(glm::radians(17.5f));
-    float shininess = 128.0f;
     glm::vec3 gridColor(0.0f, 1.0f, 0.0f);
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
+    static float yetOneMoreTimer = 0.0f;
     glm::mat4 orthoProjection = glm::ortho(0.0f, (float)frameWidth, 0.0f, (float)frameHeight);
-    glm::vec2 fpsGraphPos = glm::vec2(0.0f, 0.0f);
-    glm::vec4 lineColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-    glm::vec4 backgroundLineColor = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
-    glm::vec2 fpsScale = glm::vec2(2.0f, 3.0f);
+    glm::vec2 frameLengthGraphPos = glm::vec2(0.0f, 0.0f);
+    glm::vec3 lineColor = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 lightSourceColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 backgroundLineColor = glm::vec3(0.0f, 1.0f, 1.0f);
+    glm::vec2 frameLengthScale = glm::vec2(2.0f, 16.0f);                        ///You can note that I stretch the actual values of frame length by 16
+    glm::vec2 frameLengthMarkupScale = glm::vec2((float)frameWidth, 80.0f);     ///and the line of markup by 80, so the first line indicates 5, second 10, third 15 and fourth 20
 
     TEXT* smlMssg = generateTextData("Hell, It's about time!", chrst, 10);
     TEXT* FPStxt = generateTextData("FPS: ", chrst, 10);
@@ -176,6 +176,7 @@ int main()
         digitsArray[i] = generateTextData(std::to_string(i), chrst, 10);
     TEXT* dot = generateTextData(".", chrst, 10);
 
+    yetOneMoreTimer = glfwGetTime();
     while (!glfwWindowShouldClose(window))
     {
         currentFrame = glfwGetTime();
@@ -192,36 +193,127 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shaderManager::setAndUse("Grid Shader");
+        shaderManager::setAndUse("Common Shader");
+        shaderManager::setInt("targetFlag", SPACE_GRID);
         shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setVec3("gridColor", glm::value_ptr(gridColor));
+        shaderManager::setVec3("generalColor", glm::value_ptr(gridColor));
         glBindVertexArray(gridVAO);
         glDrawArrays(GL_LINES, 0, 44);
+        glBindVertexArray(0);
+
+        shaderManager::setInt("targetFlag", SIMPLE_LINES);
+        shaderManager::setVec2("scale", glm::value_ptr(frameLengthMarkupScale));
+        shaderManager::setVec3("generalColor", glm::value_ptr(backgroundLineColor));
+        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
+        glBindVertexArray(frameLengthMarkupVAO);
+        glDrawArrays(GL_LINES, 0, 8);
+        glBindVertexArray(0);
+
+        shaderManager::setInt("targetFlag", LIGHT_SHAPE);
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setVec3("generalColor", glm::value_ptr(lightSourceColor));
+        glBindVertexArray(lightVAO);
+        for(int i = 0; i < 4; i++)
+        {
+            model = glm::mat4(1.0);
+            model = glm::translate(model, pointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.05f));
+            shaderManager::setMat4("model", glm::value_ptr(model));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+        glBindVertexArray(0);
+
+        float deltaMsT = 1000.0f * deltaT;
+        static bool drawSecondPart = false;
+        glBindBuffer(GL_ARRAY_BUFFER, frameLengthVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, (currentFrameNumber * 2 + 1) * sizeof(float), sizeof(float), &deltaMsT);   /// currentFrameNumber * 2 + 1 points at the 'y'
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        /// Now we have updated our "fifo" buffer. The only trick now is to draw it apropriately
+        glBindVertexArray(frameLengthVAO);
+        shaderManager::setInt("targetFlag", FPS_GRAPH);
+        shaderManager::setFloat("offsetX", (float)currentFrameNumber);
+        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
+        shaderManager::setVec2("pos", glm::value_ptr(frameLengthGraphPos));
+        shaderManager::setFloat("totalWidth", (float)numberOfFramesInFrameLengthHistory);
+        shaderManager::setVec2("scale", glm::value_ptr(frameLengthScale));
+        shaderManager::setVec3("generalColor", glm::value_ptr(lineColor));
+        glPointSize(2.0f);
+        static int skipFirstdeltaFrame = 1; ///I'm skipping first frame cause it shows big frame length;
+        glDrawArrays(GL_LINE_STRIP, skipFirstdeltaFrame, std::max(currentFrameNumber-skipFirstdeltaFrame, 0));
+        if(drawSecondPart)
+        {
+            glDrawArrays(GL_LINE_STRIP, currentFrameNumber, std::max(numberOfFramesInFrameLengthHistory-currentFrameNumber-1, 0));
+            skipFirstdeltaFrame = 0;
+        }
+        glPointSize(1.0f);
+        glBindVertexArray(0);
 
         shaderManager::setAndUse("Simple Shader");
         glBindVertexArray(VAO);
+        shaderManager::setInt("material.diffuse", 0);
+        shaderManager::setInt("material.specular", 1);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureDiffuse);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textureSpecular);
+        shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
+        shaderManager::setFloat("material.shininess", 32.0f);
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setVec3("light.position", glm::value_ptr(camPos));
-        shaderManager::setVec3("light.direction", glm::value_ptr(camDir));
-        shaderManager::setFloat("light.innerCutOff", innerCutOff);
-        shaderManager::setFloat("light.outerCutOff", outerCutOff);
-        shaderManager::setVec3("light.ambient", glm::value_ptr(lightAmbient));
-        shaderManager::setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
-        shaderManager::setVec3("light.specular", glm::value_ptr(lightSpecular));
-        shaderManager::setFloat("light.constant", lightConstant);
-        shaderManager::setFloat("light.linear", lightLinear);
-        shaderManager::setFloat("light.quadratic", lightQuadratic);
-        shaderManager::setFloat("material.shininess", shininess);
-        shaderManager::setInt("material.diffuse", 0);
-        shaderManager::setInt("material.specular", 1);
+        shaderManager::setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        shaderManager::setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+        shaderManager::setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        shaderManager::setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        shaderManager::setVec3("pointLights[0].position", glm::value_ptr(pointLightPositions[0]));
+        shaderManager::setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+        shaderManager::setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+        shaderManager::setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+        shaderManager::setFloat("pointLights[0].constant", 1.0f);
+        shaderManager::setFloat("pointLights[0].linear", 0.09);
+        shaderManager::setFloat("pointLights[0].quadratic", 0.032);
+        // point light 2
+        shaderManager::setVec3("pointLights[1].position", glm::value_ptr(pointLightPositions[1]));
+        shaderManager::setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+        shaderManager::setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+        shaderManager::setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+        shaderManager::setFloat("pointLights[1].constant", 1.0f);
+        shaderManager::setFloat("pointLights[1].linear", 0.09);
+        shaderManager::setFloat("pointLights[1].quadratic", 0.032);
+        // point light 3
+        shaderManager::setVec3("pointLights[2].position", glm::value_ptr(pointLightPositions[2]));
+        shaderManager::setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+        shaderManager::setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+        shaderManager::setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+        shaderManager::setFloat("pointLights[2].constant", 1.0f);
+        shaderManager::setFloat("pointLights[2].linear", 0.09);
+        shaderManager::setFloat("pointLights[2].quadratic", 0.032);
+        // point light 4
+        shaderManager::setVec3("pointLights[3].position", glm::value_ptr(pointLightPositions[3]));
+        shaderManager::setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+        shaderManager::setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+        shaderManager::setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+        shaderManager::setFloat("pointLights[3].constant", 1.0f);
+        shaderManager::setFloat("pointLights[3].linear", 0.09);
+        shaderManager::setFloat("pointLights[3].quadratic", 0.032);
+        // spotLight
+        shaderManager::setBool("spotlightSwitch", spotlightSwitchOn);
+        if (spotlightSwitchOn)
+        {
+            shaderManager::setVec3("spotLight.position", glm::value_ptr(camPos));
+            shaderManager::setVec3("spotLight.direction", glm::value_ptr(camDir));
+            shaderManager::setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+            shaderManager::setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+            shaderManager::setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+            shaderManager::setFloat("spotLight.constant", 1.0f);
+            shaderManager::setFloat("spotLight.linear", 0.09);
+            shaderManager::setFloat("spotLight.quadratic", 0.032);
+            shaderManager::setFloat("spotLight.innerAngle", glm::cos(glm::radians(12.5f)));
+            shaderManager::setFloat("spotLight.outerAngle", glm::cos(glm::radians(15.0f)));
+        }
         for (unsigned int i = 0; i < 10; i++)
         {
             model = glm::mat4(1.0);
@@ -239,7 +331,7 @@ int main()
         float offsetX = 10 + FPStxt->width;
         float offsetY = (float)frameHeight - FPStxt->height - smlMssg->height - 10.0;
         char buff[50];
-        std::sprintf(buff, "%i", (int)(1.0f/deltaT));
+        std::sprintf(buff, "%i", (int)(1000.0f/deltaMsT));
         std::string fpsStr(buff);
         for (unsigned int i = 0; i < fpsStr.size(); i++)
         {
@@ -257,55 +349,22 @@ int main()
             }
         }
 
-        shaderManager::setAndUse("FPS Shader");
-        glBindVertexArray(fpsMarkupVAO);
-        shaderManager::setBool("drawGraph", false);
-        shaderManager::setFloat("totalWidth", (float)frameWidth);
-        shaderManager::setVec4("lineColor", glm::value_ptr(backgroundLineColor));
-        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
-        glDrawArrays(GL_LINES, 0, 8);
-        glBindVertexArray(0);
-
-        float deltaMsT = 1000.0f * deltaT;
-        static bool drawSecondPart = false;
-        glBindBuffer(GL_ARRAY_BUFFER, fpsVBO);
-        glBufferSubData(GL_ARRAY_BUFFER, (currentFrameNumber * 2 + 1) * sizeof(float), sizeof(float), &deltaMsT);   /// currentFrameNumber * 2 + 1 points at the 'y'
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        /// Now we have updated our "fifo" buffer. The only trick now is to draw it apropriately
-        shaderManager::setAndUse("FPS Shader");
-        glBindVertexArray(fpsVAO);
-        shaderManager::setBool("drawGraph", true);
-        shaderManager::setFloat("offsetX", (float)currentFrameNumber);
-        shaderManager::setMat4("projection", glm::value_ptr(orthoProjection));
-        shaderManager::setVec2("pos", glm::value_ptr(fpsGraphPos));
-        shaderManager::setFloat("totalWidth", (float)numberOfFramesInFPSHistory);
-        shaderManager::setVec2("scale", glm::value_ptr(fpsScale));
-        shaderManager::setVec4("lineColor", glm::value_ptr(lineColor));
-        glPointSize(2.0f);
-        static int skipFirstdeltaFrame = 1; ///I'm skipping first frame cause it shows big frame length;
-        glDrawArrays(GL_LINE_STRIP, skipFirstdeltaFrame, std::max(currentFrameNumber-skipFirstdeltaFrame, 0));
-        if(drawSecondPart)
-        {
-            glDrawArrays(GL_LINE_STRIP, currentFrameNumber, std::max(numberOfFramesInFPSHistory-currentFrameNumber-1, 0));
-            skipFirstdeltaFrame = 0;
-        }
-        glPointSize(1.0f);
-        glBindVertexArray(0);
-
         currentFrameNumber++;
-        if(currentFrameNumber >= numberOfFramesInFPSHistory)
+        if(currentFrameNumber >= numberOfFramesInFrameLengthHistory)
         {
             currentFrameNumber = 0;
             drawSecondPart = true;
         }
+        yetOneMoreTimer += desiredFrameLength;
+        static float timeToSleep = (yetOneMoreTimer - glfwGetTime());
+        Sleep((int)timeToSleep);
         glfwSwapBuffers(window);
         glfwPollEvents();
-        static float nextFrame = currentFrame + desiredFrameLength;
-        static float timeToSleep = (nextFrame - glfwGetTime());
-        Sleep((int)timeToSleep);
     }
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &gridVAO);
+    glDeleteVertexArrays(1, &frameLengthVAO);
+    glDeleteVertexArrays(1, &lightVAO);
     glfwTerminate();
     return 0;
 }
@@ -351,11 +410,10 @@ void processInput(GLFWwindow *window)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-        lightSourceMovement = !lightSourceMovement;
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
+    if(key == GLFW_KEY_F && action == GLFW_PRESS)
+        spotlightSwitchOn = !spotlightSwitchOn;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -447,39 +505,39 @@ void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severi
 {
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
-        std::cout << "---------------" << std::endl;
-        std::cout << "Debug message (" << id << "): " <<  message << std::endl;
+    std::cout << "---------------" << std::endl;
+    std::cout << "Debug message (" << id << "): " <<  message << std::endl;
 
-        switch (source)
-        {
-            case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
-            case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
-            case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
-            case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
-            case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
-            case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
-        } std::cout << std::endl;
+    switch (source)
+    {
+    case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+    case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+    case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+    } std::cout << std::endl;
 
-        switch (type)
-        {
-            case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
-            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
-            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
-            case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
-            case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
-            case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
-            case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
-            case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
-            case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
-        } std::cout << std::endl;
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+    case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+    case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+    case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+    case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+    case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+    } std::cout << std::endl;
 
-        switch (severity)
-        {
-            case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
-            case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
-            case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
-            case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
-        } std::cout << std::endl;
-        std::cout << std::endl;
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+    case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+    case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+    } std::cout << std::endl;
+    std::cout << std::endl;
 }
 

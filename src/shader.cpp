@@ -202,6 +202,12 @@ void shaderManager::setVec3(const std::string name, float *values)
         glUniform3fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, values);
 }
 
+void shaderManager::setVec3(const std::string name, float val1, float val2, float val3)
+{
+    if (currentShaderProgram != 0)
+        glUniform3f(glGetUniformLocation(currentShaderProgram, name.c_str()), val1, val2, val3);
+}
+
 void shaderManager::setVec4(const std::string name, float *values)
 {
     if (currentShaderProgram != 0)

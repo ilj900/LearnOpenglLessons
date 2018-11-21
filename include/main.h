@@ -59,6 +59,13 @@ glm::vec3 cubePositions[] = {
     glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+glm::vec3 pointLightPositions[] = {
+    glm::vec3( 0.7f,  0.2f,  2.0f),
+    glm::vec3( 2.3f, -3.3f, -4.0f),
+    glm::vec3(-4.0f,  2.0f, -12.0f),
+    glm::vec3( 0.0f,  0.0f, -3.0f)
+};
+
 glm::vec3 cubeRotaionAxises[] = {
     glm::vec3( 0.0f,  0.0f,  1.0f),
     glm::vec3( 1.0f,  0.0f, -1.0f),
@@ -98,15 +105,20 @@ float lineGrid[] =
     10.0f, 0.0f, -10.0f, -10.0f, 0.0f, -10.0f
 };
 
-float fpsMarkup[] =
+float frameLengthMarkup[] =
 {
-    0.0f, 30.0f, 1.0f, 30.0f,
-    0.0f, 60.0f, 1.0f, 60.0f,
-    0.0f, 90.0f, 1.0f, 90.0f,
-    0.0f, 120.0f, 1.0f, 120.0f
+    0.0f, 1.0f, 1.0f, 1.0f,
+    0.0f, 2.0f, 1.0f, 2.0f,
+    0.0f, 3.0f, 1.0f, 3.0f,
+    0.0f, 4.0f, 1.0f, 4.0f
 };
 
 #define MAIN_MONITOR 0
 #define SECOND_MONITOR 1
+
+#define LIGHT_SHAPE     0
+#define SPACE_GRID      1
+#define FPS_GRAPH       2
+#define SIMPLE_LINES    3
 
 #endif
