@@ -29,10 +29,29 @@ public:
     static void setVec3(const std::string name, float *values);
     static void setVec3(const std::string name, float val1, float val2, float val3);
     static void setVec4(const std::string name, float *values);
+    static void setBool(const std::string shaderName, const std::string name, bool value);
+    static void setInt(const std::string shaderName, const std::string name, int value);
+    static void setFloat(const std::string shaderName, const std::string name, float value);
+    static void setMat3(const std::string shaderName, const std::string name, float *values);
+    static void setMat4(const std::string shaderName, const std::string name, float *values);
+    static void setVec2(const std::string shaderName, const std::string name, float *values);
+    static void setVec3(const std::string shaderName, const std::string name, float *values);
+    static void setVec3(const std::string shaderName, const std::string name, float val1, float val2, float val3);
+    static void setVec4(const std::string shaderName, const std::string name, float *values);
+    static void setBool(unsigned int shaderId, const std::string name, bool value);
+    static void setInt(unsigned int shaderId, const std::string name, int value);
+    static void setFloat(unsigned int shaderId, const std::string name, float value);
+    static void setMat3(unsigned int shaderId, const std::string name, float *values);
+    static void setMat4(unsigned int shaderId, const std::string name, float *values);
+    static void setVec2(unsigned int shaderId, const std::string name, float *values);
+    static void setVec3(unsigned int shaderId, const std::string name, float *values);
+    static void setVec3(unsigned int shaderId, const std::string name, float val1, float val2, float val3);
+    static void setVec4(unsigned int shaderId, const std::string name, float *values);
     static void use();
     static unsigned int use(std::string name);
     static unsigned int setAndUse(std::string name);
     static unsigned int getCurrentProgramm();
+    static unsigned int getProgrammId(std::string programName);
 
 private:
     static std::vector<shaderProgram> shaderStorage;

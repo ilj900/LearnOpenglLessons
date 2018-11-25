@@ -13,20 +13,25 @@ set(SOURCES src/main.cpp
             src/glad.c
             src/shader.cpp
             src/camera.cpp
+            src/model.cpp
+            src/mesh.cpp
             src/textOutput.cpp)
 set(INCLUDES    include/glfw3.h
                 include/main.h
                 include/shader.h
                 include/camera.h
+                include/model.h
+                include/mesh.h
                 include/textOutput.h
                 include/stb_image.h)
 set(RESOURCES   res/shaders/common.vertex.shader    res/shaders/common.fragment.shader
                 res/shaders/object.vertex.shader    res/shaders/object.fragment.shader
+                res/shaders/model.vertex.shader     res/shaders/model.fragment.shader
                 res/shaders/text.vertex.shader      res/shaders/text.fragment.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 
 add_executable(Lessons ${SOURCES} ${INCLUDES} ${RESOURCES})
-target_link_libraries(Lessons libglfw3.a libfreetype.a)
+target_link_libraries(Lessons libglfw3.a libfreetype.a libassimp.dll)
 
 

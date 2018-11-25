@@ -1,8 +1,8 @@
 #include <iostream>
-#include "camera.h"
+#include <camera.h>
 #define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/quaternion.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 static float MY_PI = 3.14159265359;
 static float MY_PI_2 = 3.14159265359/2.0;

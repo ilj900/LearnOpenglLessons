@@ -1,12 +1,12 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "textOutput.h"
-#include "glad.h"
-#include "iostream"
-#include "shader.h"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
+#include <textOutput.h>
+#include <glad.h>
+#include <iostream>
+#include <shader.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 FT_Library ft;
 FT_Face face;

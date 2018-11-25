@@ -1,5 +1,5 @@
-#include "shader.h"
-#include "glad.h"
+#include <shader.h>
+#include <glad.h>
 #include <fstream>
 #include <iostream>
 #include <stdlib.h>
@@ -126,6 +126,14 @@ unsigned int shaderManager::setCurrentShaderProgram(std::string name)
     return 0;
 }
 
+unsigned int shaderManager::getProgrammId(std::string programName)
+{
+    for (unsigned int i = 0; i< shaderStorage.size(); i++)
+        if (strcmp(programName.c_str(), shaderStorage[i].name.c_str()) == 0)
+            return shaderStorage[i].ID;
+    return 0;
+}
+
 void shaderManager::use()
 {
     if (shaderManager::currentShaderProgram != 0)
@@ -213,3 +221,121 @@ void shaderManager::setVec4(const std::string name, float *values)
     if (currentShaderProgram != 0)
         glUniform4fv(glGetUniformLocation(currentShaderProgram, name.c_str()), 1, values);
 }
+
+void shaderManager::setBool(const std::string shaderName, const std::string name, bool value)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform1i(glGetUniformLocation(id, name.c_str()), (int)value);
+}
+
+void shaderManager::setInt(const std::string shaderName, const std::string name, int value)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+}
+
+void shaderManager::setFloat(const std::string shaderName, const std::string name, float value)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+}
+
+void shaderManager::setMat3(const std::string shaderName, const std::string name, float *values)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniformMatrix3fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, values);
+}
+
+void shaderManager::setMat4(const std::string shaderName, const std::string name, float *values)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, values);
+}
+
+void shaderManager::setVec2(const std::string shaderName, const std::string name, float *values)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform2fv(glGetUniformLocation(id, name.c_str()), 1, values);
+}
+
+void shaderManager::setVec3(const std::string shaderName, const std::string name, float *values)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, values);
+}
+
+void shaderManager::setVec3(const std::string shaderName, const std::string name, float val1, float val2, float val3)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform3f(glGetUniformLocation(id, name.c_str()), val1, val2, val3);
+}
+
+void shaderManager::setVec4(const std::string shaderName, const std::string name, float *values)
+{
+    unsigned int id = getProgrammId(shaderName);
+    if (id != 0)
+        glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, values);
+}
+
+void shaderManager::setBool(unsigned int shaderId, const std::string name, bool value)
+{
+    if (shaderId != 0)
+        glUniform1i(glGetUniformLocation(shaderId, name.c_str()), (int)value);
+}
+
+void shaderManager::setInt(unsigned int shaderId, const std::string name, int value)
+{
+    if (shaderId != 0)
+        glUniform1i(glGetUniformLocation(shaderId, name.c_str()), value);
+}
+
+void shaderManager::setFloat(unsigned int shaderId, const std::string name, float value)
+{
+    if (shaderId != 0)
+        glUniform1f(glGetUniformLocation(shaderId, name.c_str()), value);
+}
+
+void shaderManager::setMat3(unsigned int shaderId, const std::string name, float *values)
+{
+    if (shaderId != 0)
+        glUniformMatrix3fv(glGetUniformLocation(shaderId, name.c_str()), 1, GL_FALSE, values);
+}
+
+void shaderManager::setMat4(unsigned int shaderId, const std::string name, float *values)
+{
+    if (shaderId != 0)
+        glUniformMatrix4fv(glGetUniformLocation(shaderId, name.c_str()), 1, GL_FALSE, values);
+}
+
+void shaderManager::setVec2(unsigned int shaderId, const std::string name, float *values)
+{
+    if (shaderId != 0)
+        glUniform2fv(glGetUniformLocation(shaderId, name.c_str()), 1, values);
+}
+
+void shaderManager::setVec3(unsigned int shaderId, const std::string name, float *values)
+{
+    if (shaderId != 0)
+        glUniform3fv(glGetUniformLocation(shaderId, name.c_str()), 1, values);
+}
+
+void shaderManager::setVec3(unsigned int shaderId, const std::string name, float val1, float val2, float val3)
+{
+    if (shaderId != 0)
+        glUniform3f(glGetUniformLocation(shaderId, name.c_str()), val1, val2, val3);
+}
+
+void shaderManager::setVec4(unsigned int shaderId, const std::string name, float *values)
+{
+    if (shaderId != 0)
+        glUniform4fv(glGetUniformLocation(shaderId, name.c_str()), 1, values);
+}
+
