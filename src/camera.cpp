@@ -51,9 +51,9 @@ void camera::rotate(float yaw, float pitch, float roll)
 
 void camera::move(float dForward, float dRight, float dUp)
 {
-    cameraPos += cameraFront*dForward;
-    cameraPos += cameraRight*dRight;
-    cameraPos += cameraUp*dUp;
+    cameraPos += cameraFront*dForward*speed;
+    cameraPos += cameraRight*dRight*speed;
+    cameraPos += cameraUp*dUp*speed;
 }
 
 void camera::instantMove(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right)

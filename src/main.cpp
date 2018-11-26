@@ -81,13 +81,13 @@ int main()
     if (!shaderManager::addShadervf("./res/shaders/model.vertex.shader", "./res/shaders/model.fragment.shader", "Model Shader"))
         return -1;
 
-    cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 100.0f, 4.5f, (float)frameWidth, (float)frameHeight);
+    cam = new camera(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 1000.0f, 7.5f, (float)frameWidth, (float)frameHeight);
 
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glEnable(GL_DEPTH_TEST);
 
-    Model myModel("./res/models/nanosuit/nanosuit.obj");
+    Model myModel("J:/Workspace/Models/cathedral/combined02.obj");
     std::cout<<"Loaded"<<std::endl;
 
     static float deltaT = 0.0f;
