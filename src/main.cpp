@@ -19,10 +19,12 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+float getRandom(float left, float right);
 void querryGlParams();
 GLFWmonitor* getMonitor();
 camera *cam;
 bool spotlightSwitchOn = false;
+unsigned int currentHighlighttedDragon = 0;
 
 #include <main.h>
 
@@ -31,6 +33,9 @@ static int frameHeight = 600;
 static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
+
+#define NUMBER_OF_MODELS 300
+glm::vec3 model_positions[NUMBER_OF_MODELS];
 
 int main()
 {
@@ -72,6 +77,10 @@ int main()
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
     }
 
+    for (unsigned int i = 0; i < NUMBER_OF_MODELS; i++)
+        model_positions[i] = glm::vec3(getRandom(-30.0f, 30.0f), getRandom(-5.0f, 5.0f), getRandom(-30.0f, 30.0f));
+
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
@@ -86,8 +95,11 @@ int main()
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
 
-    Model myModel("J:/Workspace/Models/cathedral/combined02.obj");
+    Model myModel("J:/Workspace/Models/deathwing/deathwing.obj");
     std::cout<<"Loaded"<<std::endl;
 
     static float deltaT = 0.0f;
@@ -106,15 +118,47 @@ int main()
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 model(1.0f);
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+        glEnable(GL_DEPTH_TEST);
+        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         shaderManager::setAndUse("Model Shader");
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
-        model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+        shaderManager::setInt("backgroundDrawing", false);
+
+        glStencilMask(0x00);
+        for(unsigned int i = 0; i < NUMBER_OF_MODELS; i++)
+        {
+            if (currentHighlighttedDragon == i)
+                continue;
+            model = glm::mat4(1.0);
+            model = glm::translate(model, model_positions[i]);
+            model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+            shaderManager::setMat4("model", glm::value_ptr(model));
+            myModel.Draw("Model shader");
+        }
+
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        model = glm::mat4(1.0);
+        model = glm::translate(model, model_positions[currentHighlighttedDragon]);
         model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
         shaderManager::setMat4("model", glm::value_ptr(model));
         myModel.Draw("Model shader");
+
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        model = glm::mat4(1.0);
+        model = glm::translate(model, model_positions[currentHighlighttedDragon]);
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        model = glm::scale(model, glm::vec3(1.05f, 1.05f, 1.05f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        shaderManager::setInt("backgroundDrawing", true);
+        myModel.Draw("Model shader");
+        glEnable(GL_DEPTH_TEST);
+        glStencilMask(0xFF);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -168,6 +212,18 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, true);
     if(key == GLFW_KEY_F && action == GLFW_PRESS)
         spotlightSwitchOn = !spotlightSwitchOn;
+    if(key == GLFW_KEY_UP && action == GLFW_PRESS)
+        currentHighlighttedDragon+=10;
+    if(key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+        currentHighlighttedDragon-=10;
+    if(key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+        currentHighlighttedDragon-=1;
+    if(key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+        currentHighlighttedDragon+=1;
+    if (currentHighlighttedDragon < 0)
+        currentHighlighttedDragon += NUMBER_OF_MODELS;
+    if(currentHighlighttedDragon >= NUMBER_OF_MODELS)
+        currentHighlighttedDragon -= NUMBER_OF_MODELS;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -255,3 +311,10 @@ void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severi
     std::cout << std::endl;
 }
 
+
+float getRandom(float left, float right)
+{
+    float diff = right - left;
+    float randVal = (float)rand()/(float)RAND_MAX;
+    return(left + diff*randVal);
+}
