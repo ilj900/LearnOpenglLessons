@@ -113,6 +113,30 @@ float frameLengthMarkup[] =
     0.0f, 4.0f, 1.0f, 4.0f
 };
 
+float planeVertices[] =
+{
+    // positions          // texture Coords
+    50.0f, -0.5f,  50.0f,  2.0f, 0.0f,
+    -50.0f, -0.5f,  50.0f,  0.0f, 0.0f,
+    -50.0f, -0.5f, -50.0f,  0.0f, 2.0f,
+
+    50.0f, -0.5f,  50.0f,  2.0f, 0.0f,
+    -50.0f, -0.5f, -50.0f,  0.0f, 2.0f,
+    50.0f, -0.5f, -50.0f,  2.0f, 2.0f
+};
+
+float objectsPositions[] =
+{
+    0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+    0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+    1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+    0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+    1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+    1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+
+};
+
 #define MAIN_MONITOR 0
 #define SECOND_MONITOR 1
 

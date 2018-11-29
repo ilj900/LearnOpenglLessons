@@ -1,31 +1,20 @@
 #version 330 core
-
-#define LIGHT_SHAPE     0
-#define SPACE_GRID      1
-#define FPS_GRAPH       2
-#define SIMPLE_LINES    3
-
-uniform int targetFlag;
-
-uniform vec3 generalColor;
-
 out vec4 FragColor;
+
+in vec2 TexCoords;
+
+uniform sampler2D texture1;
+uniform bool drawGrass;
 
 void main()
 {
-    switch(targetFlag)
+    if (drawGrass)
     {
-    case LIGHT_SHAPE:
-        FragColor = vec4(generalColor, 1.0);
-        break;
-    case SPACE_GRID:
-        FragColor = vec4(generalColor, 1.0);
-        break;
-    case FPS_GRAPH:
-        FragColor = vec4(generalColor, 1.0);
-        break;
-    case SIMPLE_LINES:
-        FragColor = vec4(generalColor, 1.0);
-        break;
+        vec4 texColor = texture(texture1, TexCoords);
+        if(texColor.a < 0.01)
+            discard;
+        FragColor = texColor;
+    } else {
+        FragColor = texture(texture1, TexCoords);
     }
 }
