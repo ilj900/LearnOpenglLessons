@@ -89,8 +89,6 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (!shaderManager::addShadervf("./res/shaders/model.vertex.shader", "./res/shaders/model.fragment.shader", "Model Shader"))
-        return -1;
     if (!shaderManager::addShadervf("./res/shaders/common.vertex.shader", "./res/shaders/common.fragment.shader", "Common Shader"))
         return -1;
 
@@ -99,48 +97,21 @@ int main()
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
 
-    Model myModel("J:/Workspace/Models/deathwing/deathwing.obj");
-    std::cout<<"Loaded"<<std::endl;
-
-    unsigned int planeVAO, planeVBO;
-    glGenVertexArrays(1, &planeVAO);
-    glGenBuffers(1, &planeVBO);
-    glBindVertexArray(planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
-    glBindVertexArray(0);
-
-    unsigned int objectVAO, objectVBO;
-    glGenVertexArrays(1, &objectVAO);
-    glGenBuffers(1, &objectVBO);
-    glBindVertexArray(objectVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, objectVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(objectsPositions), objectsPositions, GL_STATIC_DRAW);
+    unsigned int cubeVAO, cubeVBO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-    std::vector<glm::vec3> objects
-    {
-        glm::vec3(-1.5f, 0.0f, -0.48f),
-        glm::vec3( 1.5f, 0.0f, 0.51f),
-        glm::vec3( 0.0f, 0.0f, 0.7f),
-        glm::vec3(-0.3f, 0.0f, -2.3f),
-        glm::vec3 (0.5f, 0.0f, -0.6f)
-    };
-
-    unsigned int grassTexture = TextureFromFile("grass.png", "./res/textures", false);
-    unsigned int metalTexture = TextureFromFile("metal.png", "./res/textures", false);
-    unsigned int windowTexture = TextureFromFile("window.png", "./res/textures", false);
+    unsigned int mainTexture = TextureFromFile("metal.png", "./res/textures", false);
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
@@ -157,23 +128,8 @@ int main()
         glm::mat4 projection = cam->getProjection();
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 model(1.0f);
-        glm::vec3 camPos = cam->getPosition();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glDisable(GL_BLEND);
-        shaderManager::setAndUse("Model Shader");
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setMat4("view", glm::value_ptr(view));
-
-        for(unsigned int i = 0; i < NUMBER_OF_MODELS; i++)
-        {
-            model = glm::mat4(1.0);
-            model = glm::translate(model, model_positions[i]);
-            model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-            shaderManager::setMat4("model", glm::value_ptr(model));
-            myModel.Draw("Model shader");
-        }
 
         shaderManager::setAndUse("Common Shader");
         shaderManager::setMat4("projection", glm::value_ptr(projection));
@@ -181,49 +137,16 @@ int main()
         model = glm::mat4(1.0f);
         shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setInt("texture1", 0);
-        shaderManager::setBool("drawGrass", true);
-        glBindVertexArray(planeVAO);
-        glBindTexture(GL_TEXTURE_2D, metalTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
-
-        glBindVertexArray(objectVAO);
-        glBindTexture(GL_TEXTURE_2D, grassTexture);
-        for(unsigned int i = 0; i < objects.size(); i++)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, objects[i]);
-            model = glm::translate(model, glm::vec3(0.0, 0.0, 35.0));
-            shaderManager::setMat4("model", glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
-
-        std::map<float, glm::vec3> sortedWindows;
-        for (unsigned int i = 0; i < objects.size(); i++)
-        {
-            float sqrDist = glm::distance2(camPos, objects[i]);
-            sortedWindows[sqrDist] = objects[i];
-        }
-        glEnable(GL_BLEND);
-        shaderManager::setBool("drawGrass", false);
-        glBindTexture(GL_TEXTURE_2D, windowTexture);
-        for(std::map<float, glm::vec3>::reverse_iterator it = sortedWindows.rbegin(); it != sortedWindows.rend(); ++it)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, it->second);
-            model = glm::translate(model, glm::vec3(0.0, 0.0, 45.0));
-            shaderManager::setMat4("model", glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        glBindVertexArray(cubeVAO);
+        glBindTexture(GL_TEXTURE_2D, mainTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    glDeleteVertexArrays(1, &objectVAO);
-    glDeleteVertexArrays(1, &planeVAO);
-    glDeleteBuffers(1, &objectVBO);
-    glDeleteBuffers(1, &planeVBO);
+    glDeleteVertexArrays(1, &cubeVAO);
+    glDeleteBuffers(1, &cubeVBO);
 
     glfwTerminate();
     return 0;
