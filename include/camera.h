@@ -3,6 +3,8 @@
 
 #include <glm/glm.hpp>
 
+enum movementOrder {ROLL_PITCH_YAW, ROLL_YAW_PITCH, PITCH_YAW_ROLL, PITCH_ROLL_YAW,  YAW_PITCH_ROLL, YAW_ROLL_PITCH};
+
 class camera
 {
 private:
@@ -16,10 +18,11 @@ private:
     float speed;
     float screenWidth;
     float screenHeight;
+    movementOrder mvOrder;
 
 public:
     camera();
-    camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right, float fov, float fPlane, float bPlane, float speed, float screenWidth, float screenHeight);
+    camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right, float fov, float fPlane, float bPlane, float speed, float screenWidth, float screenHeight, movementOrder mvO);
     void rotate(float yaw, float pitch, float roll);
     void move(float dForward, float dRight, float dUp);
     void instantMove(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right);
@@ -28,6 +31,7 @@ public:
     glm::mat4 getProjection();
     glm::vec3 getPosition();
     glm::vec3 getDirection();
+    void orthogonize(); /// Call this function to make front up and right vectors perpendecular
 };
 
 #endif
