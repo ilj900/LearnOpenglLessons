@@ -25,7 +25,6 @@ set(INCLUDES    include/glfw3.h
                 include/textOutput.h
                 include/stb_image.h)
 set(RESOURCES   res/shaders/common.vertex.shader    res/shaders/common.fragment.shader
-                res/shaders/object.vertex.shader    res/shaders/object.fragment.shader
                 res/shaders/model.vertex.shader     res/shaders/model.fragment.shader
                 res/shaders/text.vertex.shader      res/shaders/text.fragment.shader)
 

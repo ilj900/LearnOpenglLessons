@@ -24,10 +24,7 @@ void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severi
 float getRandom(float left, float right);
 void querryGlParams();
 GLFWmonitor* getMonitor();
-#define NUMBER_OF_CAMERAS 6
-camera* cam[NUMBER_OF_CAMERAS];
-bool spotlightSwitchOn = false;
-unsigned int currentHighlighttedDragon = 0;
+camera* cam;
 
 #include <main.h>
 
@@ -36,9 +33,7 @@ static int frameHeight = 600;
 static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
-
-#define NUMBER_OF_MODELS 30
-glm::vec3 model_positions[NUMBER_OF_MODELS];
+static unsigned int modelMode = 0;  ///0 stands for reflection; 1stands for refraction;
 
 int main()
 {
@@ -80,10 +75,6 @@ int main()
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
     }
 
-    for (unsigned int i = 0; i < NUMBER_OF_MODELS; i++)
-        model_positions[i] = glm::vec3(getRandom(-30.0f, 30.0f), -0.5, getRandom(-30.0f, 30.0f));
-
-
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
@@ -95,60 +86,27 @@ int main()
     if (!shaderManager::addShadervf("./res/shaders/common.vertex.shader", "./res/shaders/common.fragment.shader", "Common Shader"))
         return -1;
 
-    movementOrder whyDoINeedThisArray[NUMBER_OF_CAMERAS] = {ROLL_PITCH_YAW, ROLL_YAW_PITCH, PITCH_YAW_ROLL, PITCH_ROLL_YAW,  YAW_PITCH_ROLL, YAW_ROLL_PITCH};
-    for (unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        cam[i] = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 1000.0f, 7.5f, (float)frameWidth, (float)frameHeight, whyDoINeedThisArray[i]);
+    cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    framebuffer* fbo[NUMBER_OF_CAMERAS];
-    for (unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-    {
-        fbo[i] = new framebuffer();
-        glGenFramebuffers(1, &fbo[i]->framebufferID);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[i]->framebufferID);
+    Model nanosuitModel("J:/Workspace/Models/nanosuit/nanosuit.obj");
 
-        glGenTextures(1, &fbo[i]->textureAttachemntID);
-        glBindTexture(GL_TEXTURE_2D, fbo[i]->textureAttachemntID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frameWidth, frameHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo[i]->textureAttachemntID, 0);
-
-        glGenRenderbuffers(1, &fbo[i]->renderBufferID);
-        glBindRenderbuffer(GL_RENDERBUFFER, fbo[i]->renderBufferID);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameWidth, frameHeight);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fbo[i]->renderBufferID);
-
-        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            std::cout<<"Creation of framebuffer failed!"<<std::endl;
-            exit(1);
-        }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    unsigned int screenQuadVBO, screenQuadVAO;
-    glGenVertexArrays(1, &screenQuadVAO);
-    glGenBuffers(1, &screenQuadVBO);
-    glBindVertexArray(screenQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuads), screenQuads, GL_STATIC_DRAW);
+    unsigned int boxVAO, boxVBO;
+    glGenVertexArrays(1, &boxVAO);
+    glGenBuffers(1, &boxVBO);
+    glBindVertexArray(boxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, boxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (2 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindVertexArray(0);
 
-    Model myModel("J:/Workspace/Models/deathwing/deathwing.obj");
-    std::cout<<"Loaded"<<std::endl;
-
-    shaderManager::setAndUse("Common shader");
-    shaderManager::setInt("screenTexture", 0);
+    std::vector<std::string> faces = {"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"};
+    unsigned int cubemapTexture = loadCubemap("./res/textures", faces, false);
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
@@ -162,52 +120,43 @@ int main()
 
         processInput(window);
 
-        glm::mat4 projection[NUMBER_OF_CAMERAS];
-        glm::mat4 view[NUMBER_OF_CAMERAS];
-        glm::mat4 model[NUMBER_OF_CAMERAS];
+        glm::mat4 projection = cam->getProjection();;
+        glm::mat4 view = cam->getViewMatrix();
+        glm::mat4 viewWithoutTranslation = glm::mat4(glm::mat3(view));
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::vec3 camPos = cam->getPosition();
 
-        for (unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        {
-            projection[i] = cam[i]->getProjection();
-            view[i] = cam[i]->getViewMatrix();
-            model[i] = glm::mat4(1.0f);
-        }
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        {
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo[i]->framebufferID);
-            glEnable(GL_DEPTH_TEST);
+        shaderManager::setAndUse("Model Shader");
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        model = glm::translate(model, glm::vec3(-3.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+        shaderManager::setMat3("NormalMatrix", glm::value_ptr(NormalMatrix));
+        shaderManager::setVec3("cameraPos", glm::value_ptr(camPos));
+        shaderManager::setVec3("dirLight.direction", 1.0, 0.0, 0.0);
+        shaderManager::setVec3("dirLight.ambient", 0.5, 0.5, 0.5);
+        shaderManager::setVec3("dirLight.diffuse", 0.5, 0.5, 0.5);
+        shaderManager::setVec3("dirLight.specular", 0.5, 0.5, 0.5);
+        glActiveTexture(GL_TEXTURE5);
+        shaderManager::setInt("skybox", 5);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        nanosuitModel.Draw("Model Shader");
 
-            glClearColor(0.05f * i, 0.05f * i, 0.05f * i, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            shaderManager::setAndUse("Model Shader");
-            shaderManager::setMat4("projection", glm::value_ptr(projection[i]));
-            shaderManager::setMat4("view", glm::value_ptr(view[i]));
-            model[i] = glm::translate(model[i], glm::vec3(0.0f, -1.75f, 0.0f));
-            model[i] = glm::scale(model[i], glm::vec3(0.2f, 0.2f, 0.2f));
-            shaderManager::setMat4("model", glm::value_ptr(model[i]));
-            myModel.Draw("Model shader");
-        }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        float camPosAbsDelta = glm::distance2(cam[0]->getPosition(), cam[5]->getPosition());
-        std::cout<<"Delta: " <<camPosAbsDelta<<std::endl;
-
+        glDepthFunc(GL_LEQUAL);
         shaderManager::setAndUse("Common Shader");
-        glBindVertexArray(screenQuadVAO);
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        {
-            glBindTexture(GL_TEXTURE_2D, fbo[i]->textureAttachemntID);
-            glDrawArrays(GL_TRIANGLES, NUMBER_OF_CAMERAS*i, NUMBER_OF_CAMERAS);
-        }
-        glBindVertexArray(0);
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-            cam[i]->orthogonize();
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
+        shaderManager::setMat4("view", glm::value_ptr(viewWithoutTranslation));
+        glBindVertexArray(boxVAO);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthFunc(GL_LESS);
+
+        cam->orthogonize();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -247,39 +196,23 @@ void processInput(GLFWwindow *window)
         up += deltaT * movementSpeed;
     if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
         up -= deltaT * movementSpeed;
-    for(unsigned int i = 0; i < NUMBER_OF_CAMERAS/2; i++)
-        cam[i]->move(front, right, up);
+    cam->move(front, right, up);
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-            cam[i]->rotate(0.0f, 0.0f, deltaT * movementSpeed*0.2f);
+        cam->rotate(0.0f, 0.0f, deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-            cam[i]->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
+        cam->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-            cam[i]->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    for(unsigned int i = NUMBER_OF_CAMERAS/2; i < NUMBER_OF_CAMERAS; i++)
-        cam[i]->move(front, right, up);
+        cam->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if(key == GLFW_KEY_F && action == GLFW_PRESS)
-        spotlightSwitchOn = !spotlightSwitchOn;
-    if(key == GLFW_KEY_UP && action == GLFW_PRESS)
-        currentHighlighttedDragon+=10;
-    if(key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-        currentHighlighttedDragon-=10;
-    if(key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-        currentHighlighttedDragon-=1;
-    if(key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-        currentHighlighttedDragon+=1;
-    if (currentHighlighttedDragon < 0)
-        currentHighlighttedDragon += NUMBER_OF_MODELS;
-    if(currentHighlighttedDragon >= NUMBER_OF_MODELS)
-        currentHighlighttedDragon -= NUMBER_OF_MODELS;
+    if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+        cam->adjustSpeed(2.0);
+    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+        cam->adjustSpeed(0.5);
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -292,14 +225,12 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     previosPosX = xpos;
     float deltay = (previosPosY - ypos)*mouseSensitivity;
     previosPosY = ypos;
-    for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        cam[i]->rotate(deltax, deltay, 0.0f);
+    cam->rotate(deltax, deltay, 0.0f);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    for(unsigned int i = 0; i < NUMBER_OF_CAMERAS; i++)
-        cam[i]->zoom(yoffset);
+    cam->zoom(yoffset);
 }
 
 void querryGlParams()

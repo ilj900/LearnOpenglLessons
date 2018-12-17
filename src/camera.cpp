@@ -104,6 +104,11 @@ void camera::zoom(float d)
         fov = 0.01f*M_PI;
 }
 
+void camera::adjustSpeed(float value)
+{
+    speed*=value;
+}
+
 void camera::orthogonize()
 {
     glm::vec3 up = glm::normalize(glm::cross(cameraRight, cameraFront));

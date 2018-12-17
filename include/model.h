@@ -10,6 +10,7 @@
 #include <mesh.h>
 
 unsigned int TextureFromFile(std::string path, std::string directory, bool gamma = false);
+unsigned int loadCubemap(std::string path, std::vector<std::string> faces, bool gamma = false);
 
 class Model
 {

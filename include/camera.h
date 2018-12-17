@@ -31,6 +31,7 @@ public:
     glm::mat4 getProjection();
     glm::vec3 getPosition();
     glm::vec3 getDirection();
+    void adjustSpeed(float value);
     void orthogonize(); /// Call this function to make front up and right vectors perpendecular
 };
 

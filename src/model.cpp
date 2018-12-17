@@ -87,6 +87,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    std::vector<Texture> reflectMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_reflect");
+    textures.insert(textures.end(), reflectMaps.begin(), reflectMaps.end());
 
     return Mesh(vertices, indices, textures);
 }
@@ -157,6 +159,47 @@ unsigned int TextureFromFile(std::string path, std::string directory, bool gamma
         std::cout<<"Failed to load diffuse map: "<<std::endl;
     }
     stbi_image_free(data);
+    return textureID;
+}
+
+unsigned int loadCubemap(std::string path, std::vector<std::string> faces, bool gamma)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrOfChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        std::string fullName = path + '/' + faces[i];
+        unsigned char *data = stbi_load(fullName.c_str(), &width, &height, &nrOfChannels, 0);
+        if (data)
+        {
+            GLenum format;
+            switch (nrOfChannels)
+            {
+            case 1:
+                format = GL_RED;
+                break;
+            case 3:
+                format = GL_RGB;
+                break;
+            case 4:
+                format = GL_RGBA;
+                break;
+            }
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        } else {
+            std::cout<<"Failed to load diffuse map: "<<std::endl;
+        }
+        stbi_image_free(data);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
     return textureID;
 }
 
