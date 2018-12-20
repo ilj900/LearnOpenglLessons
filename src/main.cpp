@@ -34,6 +34,7 @@ static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
 static unsigned int modelMode = 0;  ///0 stands for reflection; 1stands for refraction;
+static int renderFlags[4] = {1, 1, 1, 1};
 
 int main()
 {
@@ -85,6 +86,14 @@ int main()
         return -1;
     if (!shaderManager::addShadervf("./res/shaders/common.vertex.shader", "./res/shaders/common.fragment.shader", "Common Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/height.vertex.shader", "./res/shaders/height.fragment.shader", "Height Shader"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/specular.vertex.shader", "./res/shaders/specular.fragment.shader", "Specular Shader"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/diffuse.vertex.shader", "./res/shaders/diffuse.fragment.shader", "Diffuse Shader"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/reflect.vertex.shader", "./res/shaders/reflect.fragment.shader", "Reflect Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
@@ -104,6 +113,43 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindVertexArray(0);
+
+    unsigned int uniformBlockIndexModel = glGetUniformBlockIndex(shaderManager::getProgrammId("Model Shader"), "Matrices");
+    unsigned int uniformBlockIndexCommon = glGetUniformBlockIndex(shaderManager::getProgrammId("Common Shader"), "Matrices");
+    unsigned int uniformBlockIndexHeight = glGetUniformBlockIndex(shaderManager::getProgrammId("Height Shader"), "Matrices");
+    unsigned int uniformBlockIndexSpecular = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Matrices");
+    unsigned int uniformBlockIndexDiffuse = glGetUniformBlockIndex(shaderManager::getProgrammId("Diffuse Shader"), "Matrices");
+    unsigned int uniformBlockIndexReflect = glGetUniformBlockIndex(shaderManager::getProgrammId("Reflect Shader"), "Matrices");
+    unsigned int uniformBlockIndexModelFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Model Shader"), "Flags");
+    unsigned int uniformBlockIndexHeightFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Height Shader"), "Flags");
+    unsigned int uniformBlockIndexSpecularFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Flags");
+    unsigned int uniformBlockIndexDiffuseFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Diffuse Shader"), "Flags");
+    unsigned int uniformBlockIndexReflectFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Reflect Shader"), "Flags");
+
+    glUniformBlockBinding(shaderManager::getProgrammId("Model Shader"), uniformBlockIndexModel, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Common Shader"), uniformBlockIndexCommon, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Height Shader"), uniformBlockIndexHeight, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecular, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Diffuse Shader"), uniformBlockIndexDiffuse, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Reflect Shader"), uniformBlockIndexReflect, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Model Shader"), uniformBlockIndexModelFlags, 1);
+    glUniformBlockBinding(shaderManager::getProgrammId("Height Shader"), uniformBlockIndexHeightFlags, 1);
+    glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecularFlags, 1);
+    glUniformBlockBinding(shaderManager::getProgrammId("Diffuse Shader"), uniformBlockIndexDiffuseFlags, 1);
+    glUniformBlockBinding(shaderManager::getProgrammId("Reflect Shader"), uniformBlockIndexReflectFlags, 1);
+
+    unsigned int uboMatrices, uboFlags;
+    glGenBuffers(1, &uboMatrices);
+    glGenBuffers(1, &uboFlags);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboFlags);
+    glBufferData(GL_UNIFORM_BUFFER, 4 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+    glBindBufferRange(GL_UNIFORM_BUFFER, 1, uboFlags, 0, 4 * sizeof(int));
 
     std::vector<std::string> faces = {"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"};
     unsigned int cubemapTexture = loadCubemap("./res/textures", faces, false);
@@ -129,10 +175,15 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glBindBuffer(GL_UNIFORM_BUFFER, uboFlags);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(renderFlags), renderFlags);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+
         shaderManager::setAndUse("Model Shader");
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setMat4("view", glm::value_ptr(view));
-        model = glm::translate(model, glm::vec3(-3.0f, 1.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
         shaderManager::setMat4("model", glm::value_ptr(model));
         glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
@@ -146,11 +197,37 @@ int main()
         shaderManager::setInt("skybox", 5);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         nanosuitModel.Draw("Model Shader");
+        shaderManager::setAndUse("Height Shader");
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(4.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        nanosuitModel.Draw("Height Shader");
+
+        shaderManager::setAndUse("Diffuse Shader");
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-2.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        nanosuitModel.Draw("Diffuse Shader");
+
+        shaderManager::setAndUse("Specular Shader");
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(2.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        nanosuitModel.Draw("Specular Shader");
+
+        shaderManager::setAndUse("Reflect Shader");
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-4.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        nanosuitModel.Draw("Reflect Shader");
 
         glDepthFunc(GL_LEQUAL);
         shaderManager::setAndUse("Common Shader");
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
-        shaderManager::setMat4("view", glm::value_ptr(viewWithoutTranslation));
+        shaderManager::setMat4("viewWithoutTranslation", glm::value_ptr(viewWithoutTranslation));
         glBindVertexArray(boxVAO);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -201,7 +278,7 @@ void processInput(GLFWwindow *window)
         cam->rotate(0.0f, 0.0f, deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         cam->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
         cam->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
@@ -213,6 +290,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+        renderFlags[3] = !(bool)renderFlags[3];
+    if (key == GLFW_KEY_U && action == GLFW_PRESS)
+        renderFlags[2] = !(bool)renderFlags[2];
+    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+        renderFlags[1] = !(bool)renderFlags[1];
+    if (key == GLFW_KEY_T && action == GLFW_PRESS)
+        renderFlags[0] = !(bool)renderFlags[0];
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)

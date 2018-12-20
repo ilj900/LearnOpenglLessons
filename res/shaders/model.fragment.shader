@@ -10,6 +10,14 @@ struct DirLight
     vec3 specular;
 };
 
+layout (std140) uniform Flags
+{
+    bool diffuseEnabled;
+    bool specularEnabled;
+    bool heightEnabled;
+    bool reflectEnabled;
+};
+
 uniform DirLight dirLight;
 
 uniform sampler2D texture_diffuse1;
@@ -34,7 +42,11 @@ void main()
     vec4 reflectedColor = vec4(texture(skybox, R).rgb, 1.0);
     vec3 viewDir = normalize(cameraPos - Position);
     vec3 color = CalcDirLight(dirLight, Normal, viewDir);
-    vec3 reflectValues = vec3(texture(texture_reflect1, TexCoords));
+    vec3 reflectValues;
+    if (reflectEnabled)
+        reflectValues = vec3(texture(texture_reflect1, TexCoords));
+    else
+        reflectValues = vec3(0.0, 0.0, 0.0);
     FragColor = vec4(color, 1.0) + reflectedColor*(length(reflectValues));
 }
 
@@ -47,8 +59,20 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     vec3 reflectDir = reflect(-lightDir, normal);
     float angle = dot(viewDir, reflectDir);
     float spec = pow(max(angle, 0.0), 32.0);
-    vec3 ambient = light.ambient * vec3(texture(texture_diffuse1, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(texture_diffuse1, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(texture_specular1, TexCoords));
+    vec3 ambient;
+    vec3 diffuse;
+    if (diffuseEnabled)
+    {
+    ambient = light.ambient * vec3(texture(texture_diffuse1, TexCoords));
+    diffuse = light.diffuse * diff * vec3(texture(texture_diffuse1, TexCoords));
+    } else {
+        ambient = vec3(0.0, 0.0, 0.0);
+        diffuse = vec3(0.0, 0.0, 0.0);
+    }
+    vec3 specular;
+    if (specularEnabled)
+        specular = light.specular * spec * vec3(texture(texture_specular1, TexCoords));
+    else
+        specular = vec3(0.0, 0.0, 0.0);
     return (ambient + diffuse + specular);
 }

@@ -24,9 +24,13 @@ set(INCLUDES    include/glfw3.h
                 include/mesh.h
                 include/textOutput.h
                 include/stb_image.h)
-set(RESOURCES   res/shaders/common.vertex.shader    res/shaders/common.fragment.shader
-                res/shaders/model.vertex.shader     res/shaders/model.fragment.shader
-                res/shaders/text.vertex.shader      res/shaders/text.fragment.shader)
+set(RESOURCES   res/shaders/common.vertex.shader        res/shaders/common.fragment.shader
+                res/shaders/model.vertex.shader         res/shaders/model.fragment.shader
+                res/shaders/height.vertex.shader        res/shaders/height.fragment.shader
+                res/shaders/diffuse.vertex.shader       res/shaders/diffuse.fragment.shader
+                res/shaders/specular.vertex.shader      res/shaders/specular.fragment.shader
+                res/shaders/reflect.vertex.shader       res/shaders/reflect.fragment.shader
+                res/shaders/text.vertex.shader          res/shaders/text.fragment.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 
