@@ -115,6 +115,64 @@ bool shaderManager::addShadervf(std::string vertexPath, std::string fragmentPath
     return true;
 }
 
+bool shaderManager::addShadervfg(std::string vertexPath, std::string fragmentPath, std::string geometryPath, std::string name)
+{
+    unsigned int vertexShader = shaderManager::compileShader(vertexPath, GL_VERTEX_SHADER);
+    if(!vertexShader)
+        return false;
+    unsigned int fragmentShader = shaderManager::compileShader(fragmentPath, GL_FRAGMENT_SHADER);
+    if (!fragmentShader)
+    {
+        glDeleteShader(vertexShader);
+        return false;
+    }
+    unsigned int geometryShader = shaderManager::compileShader(geometryPath, GL_GEOMETRY_SHADER);
+    if (!geometryShader)
+    {
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return false;
+    }
+    shaderProgram prog;
+    prog.ID = glCreateProgram();
+    if (!prog.ID)
+    {
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        glDeleteShader(geometryShader);
+        return false;
+    }
+    glAttachShader(prog.ID, vertexShader);
+    glAttachShader(prog.ID, fragmentShader);
+    glAttachShader(prog.ID, geometryShader);
+    glLinkProgram(prog.ID);
+    int status = 0;
+    glGetProgramiv(prog.ID, GL_LINK_STATUS, &status);
+    if (!status)
+    {
+        int logSize = 0;
+        glGetProgramiv(prog.ID, GL_INFO_LOG_LENGTH, &logSize);
+        if (logSize)
+        {
+            char *log = (char *)malloc(logSize);
+            glGetProgramInfoLog(prog.ID, logSize, &logSize, log);
+            std::cout<<"ERROR::LINKING:: "<<log<<std::endl;
+            free(log);
+        }
+        glDeleteProgram(prog.ID);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        glDeleteShader(geometryShader);
+        return false;
+    }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(geometryShader);
+    prog.name = name;
+    shaderStorage.push_back(prog);
+    return true;
+}
+
 unsigned int shaderManager::setCurrentShaderProgram(std::string name)
 {
     for (unsigned int i = 0; i< shaderStorage.size(); i++)

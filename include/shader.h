@@ -15,6 +15,7 @@ class shaderManager
 
 public:
     static bool addShadervf(std::string vertexPath, std::string fragmentPath, std::string name);
+    static bool addShadervfg(std::string vertexPath, std::string fragmentPath, std::string geometryPath, std::string name);
     static unsigned int compileShader(const std::string shaderPath, unsigned int type);
     static int readFromFile(const std::string path, char **src, int *size);
     static unsigned int setCurrentShaderProgram(std::string name);

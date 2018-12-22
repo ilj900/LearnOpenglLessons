@@ -94,6 +94,8 @@ int main()
         return -1;
     if (!shaderManager::addShadervf("./res/shaders/reflect.vertex.shader", "./res/shaders/reflect.fragment.shader", "Reflect Shader"))
         return -1;
+    if (!shaderManager::addShadervfg("./res/shaders/normal.vertex.shader", "./res/shaders/normal.fragment.shader", "./res/shaders/normal.geometry.shader", "Normal Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
@@ -120,6 +122,7 @@ int main()
     unsigned int uniformBlockIndexSpecular = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Matrices");
     unsigned int uniformBlockIndexDiffuse = glGetUniformBlockIndex(shaderManager::getProgrammId("Diffuse Shader"), "Matrices");
     unsigned int uniformBlockIndexReflect = glGetUniformBlockIndex(shaderManager::getProgrammId("Reflect Shader"), "Matrices");
+    unsigned int uniformBlockIndexNormal = glGetUniformBlockIndex(shaderManager::getProgrammId("Normal Shader"), "Matrices");
     unsigned int uniformBlockIndexModelFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Model Shader"), "Flags");
     unsigned int uniformBlockIndexHeightFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Height Shader"), "Flags");
     unsigned int uniformBlockIndexSpecularFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Flags");
@@ -132,6 +135,7 @@ int main()
     glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecular, 0);
     glUniformBlockBinding(shaderManager::getProgrammId("Diffuse Shader"), uniformBlockIndexDiffuse, 0);
     glUniformBlockBinding(shaderManager::getProgrammId("Reflect Shader"), uniformBlockIndexReflect, 0);
+    glUniformBlockBinding(shaderManager::getProgrammId("Normal Shader"), uniformBlockIndexNormal, 0);
     glUniformBlockBinding(shaderManager::getProgrammId("Model Shader"), uniformBlockIndexModelFlags, 1);
     glUniformBlockBinding(shaderManager::getProgrammId("Height Shader"), uniformBlockIndexHeightFlags, 1);
     glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecularFlags, 1);
@@ -197,6 +201,13 @@ int main()
         shaderManager::setInt("skybox", 5);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         nanosuitModel.Draw("Model Shader");
+        shaderManager::setAndUse("Normal Shader");
+        nanosuitModel.Draw("Model Shader");
+        shaderManager::setMat3("NormalMatrix", glm::value_ptr(NormalMatrix));
+        shaderManager::setMat4("model", glm::value_ptr(model));
+        nanosuitModel.Draw("Normal Shader");
+
+
         shaderManager::setAndUse("Height Shader");
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(4.0f, 1.0f, 0.0f));

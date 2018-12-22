@@ -26,6 +26,7 @@ set(INCLUDES    include/glfw3.h
                 include/stb_image.h)
 set(RESOURCES   res/shaders/common.vertex.shader        res/shaders/common.fragment.shader
                 res/shaders/model.vertex.shader         res/shaders/model.fragment.shader
+                res/shaders/normal.vertex.shader        res/shaders/normal.fragment.shader      res/shaders/normal.geometry.shader
                 res/shaders/height.vertex.shader        res/shaders/height.fragment.shader
                 res/shaders/diffuse.vertex.shader       res/shaders/diffuse.fragment.shader
                 res/shaders/specular.vertex.shader      res/shaders/specular.fragment.shader
