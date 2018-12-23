@@ -22,6 +22,7 @@ public:
 
     Model(std::string path, bool gamma = false);
     void Draw(std::string shaderName);
+    void Draw(std::string shaderName, unsigned int nrOfInstances);
 private:
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);

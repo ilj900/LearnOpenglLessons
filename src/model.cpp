@@ -15,6 +15,12 @@ void Model::Draw(std::string shaderName)
         meshes[i].Draw(shaderName);
 }
 
+void Model::Draw(std::string shaderName, unsigned int nrOfInstances)
+{
+    for(unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].Draw(shaderName, nrOfInstances);
+}
+
 void Model::loadModel(std::string path)
 {
     Assimp::Importer importer;

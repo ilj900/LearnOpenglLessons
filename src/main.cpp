@@ -33,8 +33,6 @@ static int frameHeight = 600;
 static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
-static unsigned int modelMode = 0;  ///0 stands for reflection; 1stands for refraction;
-static int renderFlags[4] = {1, 1, 1, 1};
 
 int main()
 {
@@ -84,18 +82,6 @@ int main()
 
     if (!shaderManager::addShadervf("./res/shaders/model.vertex.shader", "./res/shaders/model.fragment.shader", "Model Shader"))
         return -1;
-    if (!shaderManager::addShadervf("./res/shaders/common.vertex.shader", "./res/shaders/common.fragment.shader", "Common Shader"))
-        return -1;
-    if (!shaderManager::addShadervf("./res/shaders/height.vertex.shader", "./res/shaders/height.fragment.shader", "Height Shader"))
-        return -1;
-    if (!shaderManager::addShadervf("./res/shaders/specular.vertex.shader", "./res/shaders/specular.fragment.shader", "Specular Shader"))
-        return -1;
-    if (!shaderManager::addShadervf("./res/shaders/diffuse.vertex.shader", "./res/shaders/diffuse.fragment.shader", "Diffuse Shader"))
-        return -1;
-    if (!shaderManager::addShadervf("./res/shaders/reflect.vertex.shader", "./res/shaders/reflect.fragment.shader", "Reflect Shader"))
-        return -1;
-    if (!shaderManager::addShadervfg("./res/shaders/normal.vertex.shader", "./res/shaders/normal.fragment.shader", "./res/shaders/normal.geometry.shader", "Normal Shader"))
-        return -1;
 
     cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
@@ -104,59 +90,70 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    Model nanosuitModel("J:/Workspace/Models/nanosuit/nanosuit.obj");
+    Model planet("J:/Workspace/Models/planet/planet.obj");
+    Model asteroid("J:/Workspace/Models/rock/rock.obj");
 
-    unsigned int boxVAO, boxVBO;
-    glGenVertexArrays(1, &boxVAO);
-    glGenBuffers(1, &boxVBO);
-    glBindVertexArray(boxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, boxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glBindVertexArray(0);
+    unsigned int nrOfAsteroids = 100000;
+    glm::mat4 *modelMatreces = new glm::mat4[nrOfAsteroids];
+    srand(glfwGetTime());
+    float radius = 150.0f;
+    float width = 100.0f;
+    float height = 1.0f;
+    for(unsigned int i = 0; i < nrOfAsteroids; i++)
+    {
+        glm::mat4 model(1.0f);
 
-    unsigned int uniformBlockIndexModel = glGetUniformBlockIndex(shaderManager::getProgrammId("Model Shader"), "Matrices");
-    unsigned int uniformBlockIndexCommon = glGetUniformBlockIndex(shaderManager::getProgrammId("Common Shader"), "Matrices");
-    unsigned int uniformBlockIndexHeight = glGetUniformBlockIndex(shaderManager::getProgrammId("Height Shader"), "Matrices");
-    unsigned int uniformBlockIndexSpecular = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Matrices");
-    unsigned int uniformBlockIndexDiffuse = glGetUniformBlockIndex(shaderManager::getProgrammId("Diffuse Shader"), "Matrices");
-    unsigned int uniformBlockIndexReflect = glGetUniformBlockIndex(shaderManager::getProgrammId("Reflect Shader"), "Matrices");
-    unsigned int uniformBlockIndexNormal = glGetUniformBlockIndex(shaderManager::getProgrammId("Normal Shader"), "Matrices");
-    unsigned int uniformBlockIndexModelFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Model Shader"), "Flags");
-    unsigned int uniformBlockIndexHeightFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Height Shader"), "Flags");
-    unsigned int uniformBlockIndexSpecularFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Specular Shader"), "Flags");
-    unsigned int uniformBlockIndexDiffuseFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Diffuse Shader"), "Flags");
-    unsigned int uniformBlockIndexReflectFlags = glGetUniformBlockIndex(shaderManager::getProgrammId("Reflect Shader"), "Flags");
+        float xOffset;
+        if(i%7 == 0)
+            xOffset = getRandom(-width*0.75, width*0.75);
+        if(i%9 == 0)
+            xOffset = getRandom(-width*0.8125, width*0.8125);
+        else if (i%11 == 0)
+            xOffset = getRandom(-width*0.875, width*0.875);
+        else if (i%13 == 0)
+            xOffset = getRandom(-width, width);
+        else if (i%17 == 0)
+            xOffset = getRandom(-width*1.125, width*1.125);
+        else if (i%19 == 0)
+            xOffset = getRandom(-width*1.25, width*1.25);
+        float yOffset = getRandom(-height, height);
+        float anglePlanet = getRandom(0.0f, 360.0f);
+        float angleSelf = getRandom(0.0f, 360.0f);
+        float scale = getRandom(0.05, 0.25);
 
-    glUniformBlockBinding(shaderManager::getProgrammId("Model Shader"), uniformBlockIndexModel, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Common Shader"), uniformBlockIndexCommon, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Height Shader"), uniformBlockIndexHeight, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecular, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Diffuse Shader"), uniformBlockIndexDiffuse, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Reflect Shader"), uniformBlockIndexReflect, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Normal Shader"), uniformBlockIndexNormal, 0);
-    glUniformBlockBinding(shaderManager::getProgrammId("Model Shader"), uniformBlockIndexModelFlags, 1);
-    glUniformBlockBinding(shaderManager::getProgrammId("Height Shader"), uniformBlockIndexHeightFlags, 1);
-    glUniformBlockBinding(shaderManager::getProgrammId("Specular Shader"), uniformBlockIndexSpecularFlags, 1);
-    glUniformBlockBinding(shaderManager::getProgrammId("Diffuse Shader"), uniformBlockIndexDiffuseFlags, 1);
-    glUniformBlockBinding(shaderManager::getProgrammId("Reflect Shader"), uniformBlockIndexReflectFlags, 1);
+        model = glm::rotate(model, anglePlanet, glm::vec3(0.0, 1.0, 0.0));
+        model = glm::translate(model, glm::vec3(radius + xOffset, yOffset, 0.0));
+        model = glm::rotate(model, angleSelf, glm::vec3(0.4f, 0.6f, 0.8f));
+        model = glm::scale(model, glm::vec3(scale));
 
-    unsigned int uboMatrices, uboFlags;
-    glGenBuffers(1, &uboMatrices);
-    glGenBuffers(1, &uboFlags);
+        modelMatreces[i] = model;
+    }
 
-    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, uboFlags);
-    glBufferData(GL_UNIFORM_BUFFER, 4 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    unsigned int modelBuffer;
+    glGenBuffers(1, &modelBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, modelBuffer);
+    glBufferData(GL_ARRAY_BUFFER, nrOfAsteroids * sizeof(glm::mat4), &modelMatreces[0], GL_STATIC_DRAW);
 
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
-    glBindBufferRange(GL_UNIFORM_BUFFER, 1, uboFlags, 0, 4 * sizeof(int));
+    for (unsigned int i = 0; i < asteroid.meshes.size(); i++)
+    {
+        unsigned int VAO = asteroid.meshes[i].VAO;
+        glBindVertexArray(VAO);
+        GLsizei vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
 
-    std::vector<std::string> faces = {"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"};
-    unsigned int cubemapTexture = loadCubemap("./res/textures", faces, false);
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+        glBindVertexArray(0);
+    }
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
@@ -172,77 +169,19 @@ int main()
 
         glm::mat4 projection = cam->getProjection();;
         glm::mat4 view = cam->getViewMatrix();
-        glm::mat4 viewWithoutTranslation = glm::mat4(glm::mat3(view));
         glm::mat4 model = glm::mat4(1.0f);
-        glm::vec3 camPos = cam->getPosition();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindBuffer(GL_UNIFORM_BUFFER, uboFlags);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(renderFlags), renderFlags);
-
-        glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-
         shaderManager::setAndUse("Model Shader");
-        model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        shaderManager::setInt("drawObject", 0);
+        shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("model", glm::value_ptr(model));
-        glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-        shaderManager::setMat3("NormalMatrix", glm::value_ptr(NormalMatrix));
-        shaderManager::setVec3("cameraPos", glm::value_ptr(camPos));
-        shaderManager::setVec3("dirLight.direction", 1.0, 0.0, 0.0);
-        shaderManager::setVec3("dirLight.ambient", 0.5, 0.5, 0.5);
-        shaderManager::setVec3("dirLight.diffuse", 0.5, 0.5, 0.5);
-        shaderManager::setVec3("dirLight.specular", 0.5, 0.5, 0.5);
-        glActiveTexture(GL_TEXTURE5);
-        shaderManager::setInt("skybox", 5);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        nanosuitModel.Draw("Model Shader");
-        shaderManager::setAndUse("Normal Shader");
-        nanosuitModel.Draw("Model Shader");
-        shaderManager::setMat3("NormalMatrix", glm::value_ptr(NormalMatrix));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        nanosuitModel.Draw("Normal Shader");
-
-
-        shaderManager::setAndUse("Height Shader");
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(4.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        nanosuitModel.Draw("Height Shader");
-
-        shaderManager::setAndUse("Diffuse Shader");
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-2.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        nanosuitModel.Draw("Diffuse Shader");
-
-        shaderManager::setAndUse("Specular Shader");
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        nanosuitModel.Draw("Specular Shader");
-
-        shaderManager::setAndUse("Reflect Shader");
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-4.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        nanosuitModel.Draw("Reflect Shader");
-
-        glDepthFunc(GL_LEQUAL);
-        shaderManager::setAndUse("Common Shader");
-        shaderManager::setMat4("viewWithoutTranslation", glm::value_ptr(viewWithoutTranslation));
-        glBindVertexArray(boxVAO);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glDepthFunc(GL_LESS);
+        planet.Draw("Model Shader");
+        shaderManager::setInt("drawObject", 1);
+        asteroid.Draw("Model Shader", nrOfAsteroids);
 
         cam->orthogonize();
 
@@ -301,14 +240,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-        renderFlags[3] = !(bool)renderFlags[3];
-    if (key == GLFW_KEY_U && action == GLFW_PRESS)
-        renderFlags[2] = !(bool)renderFlags[2];
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-        renderFlags[1] = !(bool)renderFlags[1];
-    if (key == GLFW_KEY_T && action == GLFW_PRESS)
-        renderFlags[0] = !(bool)renderFlags[0];
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
