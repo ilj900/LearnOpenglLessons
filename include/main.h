@@ -90,6 +90,24 @@ float cubeVertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
+float frontSquare[]
+{
+    -1.0, -1.0, 0.0, 0.0,
+     1.0, -1.0, 1.0, 0.0,
+    -1.0,  1.0, 0.0, 1.0,
+    -1.0,  1.0, 0.0, 1.0,
+     1.0, -1.0, 1.0, 0.0,
+     1.0,  1.0, 1.0, 1.0
+};
+
+typedef struct
+{
+    unsigned int framebufferID;
+    unsigned int textureAttachemntID;
+    unsigned int renderBufferID;    //For depth and stencil attachments
+    unsigned int nrOfSamplers;
+} framebuffer;
+
 #define MAIN_MONITOR 0
 #define SECOND_MONITOR 1
 

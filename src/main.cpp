@@ -8,6 +8,7 @@
 #include <camera.h>
 #include <textOutput.h>
 #include <model.h>
+#include <main.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -21,18 +22,18 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+framebuffer* createFramebuffer(unsigned int nrOfSamplers, unsigned int width, unsigned height);
 float getRandom(float left, float right);
 void querryGlParams();
 GLFWmonitor* getMonitor();
 camera* cam;
-
-#include <main.h>
 
 static int frameWidth = 800;
 static int frameHeight = 600;
 static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
+static unsigned int nrOfSamplers = 4;
 
 int main()
 {
@@ -43,6 +44,8 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    if (nrOfSamplers > 1)
+        glfwWindowHint(GLFW_SAMPLES, nrOfSamplers);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow *window = glfwCreateWindow(frameWidth, frameHeight, "LearnOpwnGL", bestMonitor, NULL);
@@ -82,13 +85,15 @@ int main()
 
     if (!shaderManager::addShadervf("./res/shaders/model.vertex.shader", "./res/shaders/model.fragment.shader", "Model Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/simple.vertex.shader", "./res/shaders/simple.fragment.shader", "Simple Shader"))
+        return -1;
 
     cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
     glViewport(0, 0, frameWidth, frameHeight);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    if (nrOfSamplers > 1)
+        glEnable(GL_MULTISAMPLE);
 
     Model planet("J:/Workspace/Models/planet/planet.obj");
     Model asteroid("J:/Workspace/Models/rock/rock.obj");
@@ -96,8 +101,8 @@ int main()
     unsigned int nrOfAsteroids = 100000;
     glm::mat4 *modelMatreces = new glm::mat4[nrOfAsteroids];
     srand(glfwGetTime());
-    float radius = 150.0f;
-    float width = 100.0f;
+    float radius = 100.0f;
+    float width = 40.0f;
     float height = 1.0f;
     for(unsigned int i = 0; i < nrOfAsteroids; i++)
     {
@@ -155,6 +160,21 @@ int main()
         glBindVertexArray(0);
     }
 
+    framebuffer *fbms = createFramebuffer(nrOfSamplers, frameWidth, frameHeight);
+    framebuffer *fb = createFramebuffer(1, frameWidth, frameHeight);
+
+    unsigned int frontSquareVBO, frontSquareVAO;
+    glGenVertexArrays(1, &frontSquareVAO);
+    glGenBuffers(1, &frontSquareVBO);
+    glBindVertexArray(frontSquareVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, frontSquareVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(frontSquare), frontSquare, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (2 * sizeof(float)));
+    glBindVertexArray(0);
+
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
@@ -171,17 +191,37 @@ int main()
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, fbms->framebufferID);
+        glEnable(GL_DEPTH_TEST);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderManager::setAndUse("Model Shader");
-        shaderManager::setInt("drawObject", 0);
+        shaderManager::setInt("drawObject", 1);
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
+        model = glm::translate(model, glm::vec3(0.0, -8.0, 0.0));
+        model = glm::scale(model, glm::vec3(10));
         shaderManager::setMat4("model", glm::value_ptr(model));
-        planet.Draw("Model Shader");
-        shaderManager::setInt("drawObject", 1);
         asteroid.Draw("Model Shader", nrOfAsteroids);
+        shaderManager::setInt("drawObject", 0);
+        planet.Draw("Model Shader");
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbms->framebufferID);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb->framebufferID);
+        glBlitFramebuffer(0, 0, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+
+        shaderManager::setAndUse("Simple Shader");
+        glBindTexture(GL_TEXTURE_2D, fb->textureAttachemntID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(frontSquareVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
 
         cam->orthogonize();
 
@@ -325,6 +365,48 @@ void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severi
     case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
     } std::cout << std::endl;
     std::cout << std::endl;
+}
+
+framebuffer* createFramebuffer(unsigned int nrOfSamplers, unsigned int width, unsigned height)
+{
+    framebuffer* fb = new framebuffer();
+    glGenFramebuffers(1, &fb->framebufferID);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb->framebufferID);
+
+    glGenTextures(1, &fb->textureAttachemntID);
+    if (nrOfSamplers > 1)
+    {
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fb->textureAttachemntID);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nrOfSamplers, GL_RGB, width, height, GL_TRUE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, fb->textureAttachemntID, 0);
+    } else  {
+        glBindTexture(GL_TEXTURE_2D, fb->textureAttachemntID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->textureAttachemntID, 0);
+    }
+
+    glGenRenderbuffers(1, &fb->renderBufferID);
+    if (nrOfSamplers > 1)
+    {
+        glBindRenderbuffer(GL_RENDERBUFFER, fb->renderBufferID);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, nrOfSamplers, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->renderBufferID);
+    } else {
+        glBindRenderbuffer(GL_RENDERBUFFER, fb->renderBufferID);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->renderBufferID);
+    }
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout<<"Creation of framebuffer failed!"<<std::endl;
+        exit(1);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return fb;
 }
 
 
