@@ -22,7 +22,6 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
-framebuffer* createFramebuffer(unsigned int nrOfSamplers, unsigned int width, unsigned height);
 float getRandom(float left, float right);
 void querryGlParams();
 GLFWmonitor* getMonitor();
@@ -33,7 +32,7 @@ static int frameHeight = 600;
 static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
-static unsigned int nrOfSamplers = 4;
+static bool blinn = true;
 
 int main()
 {
@@ -44,8 +43,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    if (nrOfSamplers > 1)
-        glfwWindowHint(GLFW_SAMPLES, nrOfSamplers);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow *window = glfwCreateWindow(frameWidth, frameHeight, "LearnOpwnGL", bestMonitor, NULL);
@@ -83,101 +80,37 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (!shaderManager::addShadervf("./res/shaders/model.vertex.shader", "./res/shaders/model.fragment.shader", "Model Shader"))
-        return -1;
     if (!shaderManager::addShadervf("./res/shaders/simple.vertex.shader", "./res/shaders/simple.fragment.shader", "Simple Shader"))
         return -1;
 
     cam = new camera(glm::vec3(0.0f, 0.5f, 50.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
+    unsigned int floorTexture = TextureFromFile("wood.png", "./res/textures", false);
+
     glViewport(0, 0, frameWidth, frameHeight);
-    glEnable(GL_CULL_FACE);
-    if (nrOfSamplers > 1)
-        glEnable(GL_MULTISAMPLE);
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-    Model planet("J:/Workspace/Models/planet/planet.obj");
-    Model asteroid("J:/Workspace/Models/rock/rock.obj");
-
-    unsigned int nrOfAsteroids = 100000;
-    glm::mat4 *modelMatreces = new glm::mat4[nrOfAsteroids];
-    srand(glfwGetTime());
-    float radius = 100.0f;
-    float width = 40.0f;
-    float height = 1.0f;
-    for(unsigned int i = 0; i < nrOfAsteroids; i++)
-    {
-        glm::mat4 model(1.0f);
-
-        float xOffset;
-        if(i%7 == 0)
-            xOffset = getRandom(-width*0.75, width*0.75);
-        if(i%9 == 0)
-            xOffset = getRandom(-width*0.8125, width*0.8125);
-        else if (i%11 == 0)
-            xOffset = getRandom(-width*0.875, width*0.875);
-        else if (i%13 == 0)
-            xOffset = getRandom(-width, width);
-        else if (i%17 == 0)
-            xOffset = getRandom(-width*1.125, width*1.125);
-        else if (i%19 == 0)
-            xOffset = getRandom(-width*1.25, width*1.25);
-        float yOffset = getRandom(-height, height);
-        float anglePlanet = getRandom(0.0f, 360.0f);
-        float angleSelf = getRandom(0.0f, 360.0f);
-        float scale = getRandom(0.05, 0.25);
-
-        model = glm::rotate(model, anglePlanet, glm::vec3(0.0, 1.0, 0.0));
-        model = glm::translate(model, glm::vec3(radius + xOffset, yOffset, 0.0));
-        model = glm::rotate(model, angleSelf, glm::vec3(0.4f, 0.6f, 0.8f));
-        model = glm::scale(model, glm::vec3(scale));
-
-        modelMatreces[i] = model;
-    }
-
-    unsigned int modelBuffer;
-    glGenBuffers(1, &modelBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, modelBuffer);
-    glBufferData(GL_ARRAY_BUFFER, nrOfAsteroids * sizeof(glm::mat4), &modelMatreces[0], GL_STATIC_DRAW);
-
-    for (unsigned int i = 0; i < asteroid.meshes.size(); i++)
-    {
-        unsigned int VAO = asteroid.meshes[i].VAO;
-        glBindVertexArray(VAO);
-        GLsizei vec4Size = sizeof(glm::vec4);
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
-        glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
-        glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
-        glEnableVertexAttribArray(6);
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
-
-        glVertexAttribDivisor(3, 1);
-        glVertexAttribDivisor(4, 1);
-        glVertexAttribDivisor(5, 1);
-        glVertexAttribDivisor(6, 1);
-        glBindVertexArray(0);
-    }
-
-    framebuffer *fbms = createFramebuffer(nrOfSamplers, frameWidth, frameHeight);
-    framebuffer *fb = createFramebuffer(1, frameWidth, frameHeight);
-
-    unsigned int frontSquareVBO, frontSquareVAO;
-    glGenVertexArrays(1, &frontSquareVAO);
-    glGenBuffers(1, &frontSquareVBO);
-    glBindVertexArray(frontSquareVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, frontSquareVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(frontSquare), frontSquare, GL_STATIC_DRAW);
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(square), square, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
     glBindVertexArray(0);
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
+    glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    std::cout<<"By default lighting is Blinn-Fong"<<std::endl;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -189,40 +122,22 @@ int main()
 
         glm::mat4 projection = cam->getProjection();;
         glm::mat4 view = cam->getViewMatrix();
+        glm::vec3 camPos = cam->getPosition();
         glm::mat4 model = glm::mat4(1.0f);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbms->framebufferID);
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shaderManager::setAndUse("Model Shader");
-        shaderManager::setInt("drawObject", 1);
+        shaderManager::setAndUse("Simple Shader");
+        shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
-        model = glm::translate(model, glm::vec3(0.0, -8.0, 0.0));
-        model = glm::scale(model, glm::vec3(10));
-        shaderManager::setMat4("model", glm::value_ptr(model));
-        asteroid.Draw("Model Shader", nrOfAsteroids);
-        shaderManager::setInt("drawObject", 0);
-        planet.Draw("Model Shader");
+        shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
+        shaderManager::setVec3("lightPos", glm::value_ptr(lightPos));
+        shaderManager::setInt("blinn", blinn);
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbms->framebufferID);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb->framebufferID);
-        glBlitFramebuffer(0, 0, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
-
-        shaderManager::setAndUse("Simple Shader");
-        glBindTexture(GL_TEXTURE_2D, fb->textureAttachemntID);
-        glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(frontSquareVAO);
+        glBindVertexArray(planeVAO);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
-
         cam->orthogonize();
 
         glfwSwapBuffers(window);
@@ -280,6 +195,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
+    if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    {
+        blinn = !blinn;
+        if (blinn)
+            std::cout<<"Blinn-Fong"<<std::endl;
+        else
+            std::cout<<"Fong"<<std::endl;
+    }
+
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
