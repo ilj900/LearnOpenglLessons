@@ -33,6 +33,7 @@ static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
 static bool blinn = true;
+static float gamma = 2.2;
 
 int main()
 {
@@ -108,7 +109,7 @@ int main()
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
-    glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 lightPos[4] = {glm::vec3(-6.0f, 0.0f, 0.0f), glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(6.0f, 0.0f, 0.0f)};
 
     std::cout<<"By default lighting is Blinn-Fong"<<std::endl;
 
@@ -132,8 +133,12 @@ int main()
         shaderManager::setMat4("view", glm::value_ptr(view));
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setVec3("lightPos", glm::value_ptr(lightPos));
+        shaderManager::setVec3("lightPos[0]", glm::value_ptr(lightPos[0]));
+        shaderManager::setVec3("lightPos[1]", glm::value_ptr(lightPos[1]));
+        shaderManager::setVec3("lightPos[2]", glm::value_ptr(lightPos[2]));
+        shaderManager::setVec3("lightPos[3]", glm::value_ptr(lightPos[3]));
         shaderManager::setInt("blinn", blinn);
+        shaderManager::setFloat("gamma", gamma);
 
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture);
@@ -195,6 +200,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
+    if (key == GLFW_KEY_8 && action == GLFW_PRESS)
+        gamma += 0.05;
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+        gamma -= 0.05;
     if (key == GLFW_KEY_B && action == GLFW_PRESS)
     {
         blinn = !blinn;
