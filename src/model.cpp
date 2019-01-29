@@ -129,15 +129,15 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-unsigned int TextureFromFile(std::string path, std::string directory, bool gamma)
+unsigned int TextureFromFile(std::string fileName, std::string filePath, bool gamma)
 {
-    path = directory + '/' + path;
+    std::string fullPath = filePath + '/' + fileName;
 
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrComponents, 0);
+    unsigned char *data = stbi_load(fullPath.c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
         GLenum format;
