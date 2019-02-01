@@ -24,7 +24,7 @@ set(INCLUDES    include/glfw3.h
                 include/mesh.h
                 include/textOutput.h
                 include/stb_image.h)
-set(RESOURCES   res/shaders/model.vertex.shader         res/shaders/model.fragment.shader
+set(RESOURCES   res/shaders/shadow.vertex.shader      res/shaders/shadow.fragment.shader        res/shaders/shadow.geometry.shader
                 res/shaders/simple.vertex.shader      res/shaders/simple.fragment.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
