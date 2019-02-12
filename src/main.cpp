@@ -34,6 +34,8 @@ static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
 static float movementSpeed = 4.5f;
+static float heightScale = 0.05;
+bool allowRotation = true;
 
 int main()
 {
@@ -86,8 +88,9 @@ int main()
 
     cam = new camera(glm::vec3(-2.0f, 0.0f, 2.0f), glm::vec3(1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
-    unsigned int brickwallDiff = TextureFromFile("brickwall.jpg", "./res/textures", false);
-    unsigned int brickwallNormal = TextureFromFile("brickwall_normal.jpg", "./res/textures", false);
+    unsigned int brickwallDiff = TextureFromFile("bricks2.jpg", "./res/textures", false);
+    unsigned int brickwallNormal = TextureFromFile("bricks2_normal.jpg", "./res/textures", false);
+    unsigned int brickwallDisplacement = TextureFromFile("bricks2_disp.jpg", "./res/textures", false);
 
     glViewport(0, 0, frameWidth, frameHeight);
     glEnable(GL_DEPTH_TEST);
@@ -122,9 +125,9 @@ int main()
     tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
     tangent1 = glm::normalize(tangent1);
 
-    bitangent1.x = f * (deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-    bitangent1.y = f * (deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-    bitangent1.z = f * (deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+    bitangent1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+    bitangent1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+    bitangent1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
     bitangent1 = glm::normalize(bitangent1);
 
     edge1 = pos3 - pos1;
@@ -140,9 +143,9 @@ int main()
     tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
     tangent2 = glm::normalize(tangent2);
 
-    bitangent2.x = f * (deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-    bitangent2.y = f * (deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-    bitangent2.z = f * (deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+    bitangent2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+    bitangent2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+    bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
     bitangent2 = glm::normalize(bitangent2);
 
     float quadVertices[] = {
@@ -183,6 +186,8 @@ int main()
     shaderManager::setAndUse("Simple Shader");
     shaderManager::setInt("diffuseMap", 0);
     shaderManager::setInt("normalMap", 1);
+    shaderManager::setInt("depthMap", 2);
+    static float angle = 0.0;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -203,16 +208,21 @@ int main()
         shaderManager::setAndUse("Simple Shader");
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
-        model = glm::rotate(model, glm::radians((float)glfwGetTime() * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+        if (allowRotation)
+            angle += deltaT;
+        model = glm::rotate(model, glm::radians(angle * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
         shaderManager::setMat4("model", glm::value_ptr(model));
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
         shaderManager::setVec3("lightPos", glm::value_ptr(lightPos));
         glm::mat3 normalMatrix = getNormalMatrix(model);
         shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
+        shaderManager::setFloat("height_scale", heightScale);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, brickwallDiff);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, brickwallNormal);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, brickwallDisplacement);
         glBindVertexArray(wallVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
@@ -273,6 +283,22 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+    {
+        if (heightScale > 0.0f)
+            heightScale -= 0.025f;
+        else
+            heightScale = 0.0f;
+    }
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+    {
+        if (heightScale < 1.0f)
+            heightScale += 0.025f;
+        else
+            heightScale = 1.0f;
+    }
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+        allowRotation = !allowRotation;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
