@@ -34,8 +34,9 @@ static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
 static float movementSpeed = 4.5f;
-static float heightScale = 0.05;
-bool allowRotation = true;
+bool hdr = true;
+bool hdrKeyPressed = false;
+float exposure = 1.0f;
 
 int main()
 {
@@ -85,109 +86,84 @@ int main()
 
     if (!shaderManager::addShadervf("./res/shaders/simple.vertex.shader", "./res/shaders/simple.fragment.shader", "Simple Shader"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/hdr.vertex.shader", "./res/shaders/hdr.fragment.shader", "HDR Shader"))
+        return -1;
 
-    cam = new camera(glm::vec3(-2.0f, 0.0f, 2.0f), glm::vec3(1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
+    cam = new camera(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
-    unsigned int brickwallDiff = TextureFromFile("bricks2.jpg", "./res/textures", false);
-    unsigned int brickwallNormal = TextureFromFile("bricks2_normal.jpg", "./res/textures", false);
-    unsigned int brickwallDisplacement = TextureFromFile("bricks2_disp.jpg", "./res/textures", false);
+    unsigned int woodTexture = TextureFromFile("wood.png", "./res/textures", false);
 
     glViewport(0, 0, frameWidth, frameHeight);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glEnable(GL_DEPTH_TEST);
 
-    // positions
-    glm::vec3 pos1(-1.0f,  1.0f, 0.0f);
-    glm::vec3 pos2(-1.0f, -1.0f, 0.0f);
-    glm::vec3 pos3( 1.0f, -1.0f, 0.0f);
-    glm::vec3 pos4( 1.0f,  1.0f, 0.0f);
-    // texture coordinates
-    glm::vec2 uv1(0.0f, 1.0f);
-    glm::vec2 uv2(0.0f, 0.0f);
-    glm::vec2 uv3(1.0f, 0.0f);
-    glm::vec2 uv4(1.0f, 1.0f);
-    // normal vector
-    glm::vec3 nm(0.0f, 0.0f, 1.0f);
-    // tangent vector
-    glm::vec3 tangent1, tangent2;
-    // bitangent vector
-    glm::vec3 bitangent1, bitangent2;
-
-    glm::vec3 edge1 = pos2 - pos1;
-    glm::vec3 edge2 = pos3 - pos1;
-
-    glm::vec2 deltaUV1 = uv2 - uv1;
-    glm::vec2 deltaUV2 = uv3 - uv1;
-
-    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-    tangent1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-    tangent1 = glm::normalize(tangent1);
-
-    bitangent1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-    bitangent1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-    bitangent1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-    bitangent1 = glm::normalize(bitangent1);
-
-    edge1 = pos3 - pos1;
-    edge2 = pos4 - pos1;
-
-    deltaUV1 = uv3 - uv1;
-    deltaUV2 = uv4 - uv1;
-
-    f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-    tangent2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-    tangent2 = glm::normalize(tangent2);
-
-    bitangent2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-    bitangent2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-    bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-    bitangent2 = glm::normalize(bitangent2);
-
-    float quadVertices[] = {
-        // positions            // normal         // texcoords  // tangent                          // bitangent
-        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-        pos2.x, pos2.y, pos2.z, nm.x, nm.y, nm.z, uv2.x, uv2.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-
-        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
-        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
-        pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z
-    };
-
-    unsigned int wallVBO, wallVAO;
-    glGenVertexArrays(1, &wallVAO);
-    glGenBuffers(1, &wallVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, wallVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-    glBindVertexArray(wallVAO);
+    unsigned int cubeVBO, cubeVAO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    glBindVertexArray(cubeVAO);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(8 * sizeof(float)));
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(11 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    glm::vec3 lightPos(0.5f, 1.0f, 0.3f);
+    unsigned int quadVBO, quadVAO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screenSquare), screenSquare, GL_STATIC_DRAW);
+    glBindVertexArray(quadVAO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    unsigned int hdrFBO;
+    glGenFramebuffers(1, &hdrFBO);
+    unsigned int colorBuffer;
+    glGenTextures(1, &colorBuffer);
+    glBindTexture(GL_TEXTURE_2D, colorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, frameWidth, frameHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    unsigned int rboDepth;
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, frameWidth, frameHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    std::vector<glm::vec3> lightPositions;
+    lightPositions.push_back(glm::vec3( 0.0f,  0.0f, 49.5f)); // back light
+    lightPositions.push_back(glm::vec3(-1.4f, -1.9f, 9.0f));
+    lightPositions.push_back(glm::vec3( 0.0f, -1.8f, 4.0f));
+    lightPositions.push_back(glm::vec3( 0.8f, -1.7f, 6.0f));
+
+    std::vector<glm::vec3> lightColors;
+    lightColors.push_back(glm::vec3(200.0f, 200.0f, 200.0f));
+    lightColors.push_back(glm::vec3(0.1f, 0.0f, 0.0f));
+    lightColors.push_back(glm::vec3(0.0f, 0.0f, 0.2f));
+    lightColors.push_back(glm::vec3(0.0f, 0.1f, 0.0f));
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
+
     shaderManager::setAndUse("Simple Shader");
-    shaderManager::setInt("diffuseMap", 0);
-    shaderManager::setInt("normalMap", 1);
-    shaderManager::setInt("depthMap", 2);
-    static float angle = 0.0;
+    shaderManager::setInt("diffuseTexture", 0);
+    shaderManager::setAndUse("HDR Shader");
+    shaderManager::setInt("hdrBuffer", 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -202,33 +178,44 @@ int main()
         glm::vec3 camPos = cam->getPosition();
         glm::mat4 model(1.0f);
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderManager::setAndUse("Simple Shader");
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
-        if (allowRotation)
-            angle += deltaT;
-        model = glm::rotate(model, glm::radians(angle * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0));
+        model = glm::scale(model, glm::vec3(2.5f, 2.5f, 27.5f));
         shaderManager::setMat4("model", glm::value_ptr(model));
+        shaderManager::setInt("inverseNormals", true);
         shaderManager::setVec3("viewPos", glm::value_ptr(camPos));
-        shaderManager::setVec3("lightPos", glm::value_ptr(lightPos));
         glm::mat3 normalMatrix = getNormalMatrix(model);
         shaderManager::setMat3("normalMatrix", glm::value_ptr(normalMatrix));
-        shaderManager::setFloat("height_scale", heightScale);
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            shaderManager::setVec3("lights[" + std::to_string(i) + "].Position", glm::value_ptr(lightPositions[i]));
+            shaderManager::setVec3("lights[" + std::to_string(i) + "].Color", glm::value_ptr(lightColors[i]));
+        }
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, brickwallDiff);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, brickwallNormal);
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, brickwallDisplacement);
-        glBindVertexArray(wallVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindTexture(GL_TEXTURE_2D, woodTexture);
+        glBindVertexArray(cubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        shaderManager::setAndUse("HDR Shader");
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorBuffer);
+        shaderManager::setInt("hdr", hdr);
+        shaderManager::setFloat("exposure", exposure);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glBindVertexArray(0);
 
         cam->orthogonize();
 
+        Sleep(15);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -273,6 +260,14 @@ void processInput(GLFWwindow *window)
         cam->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
         cam->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+    {
+        exposure -= 0.01f;
+        if (exposure < 0.0f)
+            exposure = 0.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+        exposure += 0.01f;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -283,22 +278,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
-    if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-    {
-        if (heightScale > 0.0f)
-            heightScale -= 0.025f;
-        else
-            heightScale = 0.0f;
-    }
-    if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-    {
-        if (heightScale < 1.0f)
-            heightScale += 0.025f;
-        else
-            heightScale = 1.0f;
-    }
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-        allowRotation = !allowRotation;
+    if (key == GLFW_KEY_H && action == GLFW_PRESS)
+        hdr = !hdr;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
