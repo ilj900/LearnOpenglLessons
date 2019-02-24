@@ -17,7 +17,7 @@ uniform mat3 normalMatrix;
 
 void main()
 {
-    vs_out.FragPos = vec3(model * vec4(aPos, 1.0));
+    vs_out.FragPos = vec3(view * model * vec4(aPos, 1.0));
     vs_out.TexCoords = aTexCoords;
     vs_out.Normal = normalMatrix * aNormal;
 
