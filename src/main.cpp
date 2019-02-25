@@ -6,15 +6,19 @@
 #include <glfw3.h>
 #include <shader.h>
 #include <camera.h>
+#include <main.h>
 #include <textOutput.h>
 #include <model.h>
-#include <main.h>
+#include <random>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
+
+#define my_Pi 3.14159265359
+#define my_Pi_2 1.57079632679
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -51,8 +55,8 @@ int main()
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(frameWidth, frameHeight, "LearnOpwnGL", bestMonitor, NULL);
-    if (window == NULL)
+    GLFWwindow *window = glfwCreateWindow(frameWidth, frameHeight, "LearnOpwnGL", bestMonitor, nullptr);
+    if (window == nullptr)
     {
         const char *description;
         glfwGetError(&description);
@@ -95,9 +99,9 @@ int main()
     if (!shaderManager::addShadervf("./res/shaders/ssao.vertex.shader", "./res/shaders/ssao_blur.fragment.shader", "Blur"))
         return -1;
 
-    cam = new camera(glm::vec3(2.0f, 2.0f, 15.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), M_PI_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
+    cam = new camera(glm::vec3(2.0f, 2.0f, 15.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), my_Pi_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
-    Model nanosuit("./../../Models/nanosuit/nanosuit.obj");
+	Model nanosuit("./../../Models/nanosuit/nanosuit.obj");
 
     glViewport(0, 0, frameWidth, frameHeight);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -110,7 +114,7 @@ int main()
 
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D, gPosition);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -119,14 +123,14 @@ int main()
 
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D, gNormal);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 
     glGenTextures(1, &gAlbedo);
     glBindTexture(GL_TEXTURE_2D, gAlbedo);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameWidth, frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameWidth, frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedo, 0);
@@ -152,7 +156,7 @@ int main()
 
     glGenTextures(1, &ssaoColorBuffer);
     glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
@@ -162,7 +166,7 @@ int main()
     glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
     glGenTextures(1, &ssaoColorBufferBlur);
     glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, frameWidth, frameHeight, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBufferBlur, 0);
@@ -202,11 +206,11 @@ int main()
     std::vector<glm::vec3> ssaoKernel;
     for(unsigned int i = 0; i < 32; i++)
     {
-        glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator));
+        glm::vec3 sample(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator));
         sample = glm::normalize(sample);
         sample *= randomFloats(generator);
-        float scale = float(i) / 32.0;
-        scale = 0.1f + scale * scale * 0.9;
+        float scale = float(i) / 32.0f;
+        scale = 0.1f + scale * scale * 0.9f;
         sample *= scale;
         ssaoKernel.push_back(sample);
     }
@@ -214,7 +218,7 @@ int main()
     std::vector<glm::vec3> ssaoNoise;
     for (unsigned int i = 0; i < 16; i++)
     {
-        glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, 0.0f);
+        glm::vec3 noise(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
         ssaoNoise.push_back(noise);
     }
 
@@ -264,7 +268,7 @@ int main()
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
         model = glm::mat4(1.0f);
-        model = glm::rotate(model, float(-M_PI_2), glm::vec3(1.0, 0.0, 0.0));
+        model = glm::rotate(model, float(-my_Pi_2), glm::vec3(1.0, 0.0, 0.0));
         model = glm::translate(model, glm::vec3(0.0, -5.0, 0.0));
         model = glm::scale(model, glm::vec3(0.25f));
         shaderManager::setMat4("model", glm::value_ptr(model));
@@ -320,9 +324,9 @@ int main()
         shaderManager::setAndUse("Lighting");
         glm::vec3 lightPosView = glm::vec3(view * glm::vec4(2.0, 4.0, -2.0, 1.0));
         shaderManager::setVec3("light.Position", glm::value_ptr(lightPosView));
-        shaderManager::setVec3("light.Color", 0.2, 0.2, 0.7);
-        const float linear    = 0.09;
-        const float quadratic = 0.032;
+        shaderManager::setVec3("light.Color", 0.2f, 0.2f, 0.7f);
+        const float linear    = 0.09f;
+        const float quadratic = 0.032f;
         shaderManager::setFloat("light.Linear", linear);
         shaderManager::setFloat("light.Quadratic", quadratic);
         glActiveTexture(GL_TEXTURE0);
@@ -360,7 +364,7 @@ void processInput(GLFWwindow *window)
     static float lastInput = 0.0f;
     static float currentInput = 0.0f;
 
-    currentInput = glfwGetTime();
+    currentInput = float(glfwGetTime());
     float deltaT = currentInput - lastInput;
     lastInput = currentInput;
 
@@ -406,7 +410,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    static double mouseSensitivity = 0.0005f;
+    static double mouseSensitivity = 0.0005;
     static double previosPosX = xpos;
     static double previosPosY = ypos;
 

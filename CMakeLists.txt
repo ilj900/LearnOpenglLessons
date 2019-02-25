@@ -31,6 +31,6 @@ set(RESOURCES       res/shaders/geometry_pass.vertex.shader         res/shaders/
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 
 add_executable(Lessons ${SOURCES} ${INCLUDES} ${RESOURCES})
-target_link_libraries(Lessons libglfw3.a libfreetype.a libassimp.dll)
+target_link_libraries(Lessons glfw3.lib freetyped.lib assimp-vc140-mtd.dll)
 
 

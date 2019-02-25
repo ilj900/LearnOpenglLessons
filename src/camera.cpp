@@ -28,7 +28,7 @@ camera::camera() :
     cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)),
     cameraRight(1.0f, 0.0f, 0.0f),
     speed(2.5f),
-    fov(M_PI_2),
+    fov(MY_PI_2),
     nearClipPlane(1.0f),
     farClipPlane(100.0f),
     screenWidth(1920.0f),
@@ -98,10 +98,10 @@ void camera::instantMove(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm:
 void camera::zoom(float d)
 {
     fov+=d*0.01f;
-    if(fov > 0.99f*M_PI)
-        fov = 0.99f*M_PI;
-    if (fov < 0.01f*M_PI)
-        fov = 0.01f*M_PI;
+    if(fov > 0.99f*MY_PI)
+        fov = 0.99f*MY_PI;
+    if (fov < 0.01f*MY_PI)
+        fov = 0.01f*MY_PI;
 }
 
 void camera::adjustSpeed(float value)
