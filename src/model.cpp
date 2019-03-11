@@ -21,6 +21,12 @@ void Model::Draw(std::string shaderName, unsigned int nrOfInstances)
         meshes[i].Draw(shaderName, nrOfInstances);
 }
 
+void Model::DrawTextureless(std::string shaderName)
+{
+	for (unsigned int i = 0; i < meshes.size(); i++)
+		meshes[i].DrawTextureless(shaderName);
+}
+
 void Model::loadModel(std::string path)
 {
     Assimp::Importer importer;

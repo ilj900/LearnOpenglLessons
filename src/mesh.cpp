@@ -42,6 +42,13 @@ void Mesh::Draw(std::string programName)
     glActiveTexture(GL_TEXTURE0);
 }
 
+void Mesh::DrawTextureless(std::string programName)
+{
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+}
+
 void Mesh::Draw(std::string programName, unsigned int nrOfInstances)
 {
     unsigned int diffuseNr = 1;

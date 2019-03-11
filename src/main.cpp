@@ -17,6 +17,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 
+#include <stb_image.h>
+
 #define my_Pi 3.14159265359
 #define my_Pi_2 1.57079632679
 
@@ -40,7 +42,6 @@ static int monitor = SECOND_MONITOR;
 static bool vSync = true;
 static float desiredFrameLength = 1000.0f/60.0f;
 static float movementSpeed = 4.5f;
-static bool drawTextures = false;
 
 int main()
 {
@@ -88,104 +89,239 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     if (!shaderManager::addShadervf("./res/shaders/pbr.vertex.shader", "./res/shaders/pbr.fragment.shader", "PBR"))
         return -1;
+    if (!shaderManager::addShadervf("./res/shaders/cubemap.vertex.shader", "./res/shaders/equirectangular_to_cubemap.fragment.shader", "ETC"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/cubemap.vertex.shader", "./res/shaders/irradiance_convolution.fragment.shader", "IC"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/cubemap.vertex.shader", "./res/shaders/prefilter.fragment.shader", "PF"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/brdf.vertex.shader", "./res/shaders/brdf.fragment.shader", "BRDF"))
+        return -1;
+    if (!shaderManager::addShadervf("./res/shaders/background.vertex.shader", "./res/shaders/background.fragment.shader", "BG"))
+        return -1;
+	if (!shaderManager::addShadervf("./res/shaders/test.vertex.shader", "./res/shaders/test.fragment.shader", "Test"))
+		return -1;
 
-    cam = new camera(glm::vec3(2.0f, 2.0f, 15.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), my_Pi_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
+    cam = new camera(glm::vec3(0.0f, 0.0f, 15.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), my_Pi_2/2.0f, 0.1f, 10000.0f, 7.5f, (float)frameWidth, (float)frameHeight, YAW_ROLL_PITCH);
 
-	unsigned int sphereVBO, sphereEBO, sphereVAO;
-	unsigned int indexCount = 0;
+    Model cerberus("./res/models/Cerberus/Cerberus_LP.FBX", false);
 
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> UVs;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> tangent;
-	std::vector<glm::vec3> bitangent;
-	std::vector<unsigned int> indices;
-
-	const unsigned int X_SEGMENTS = 512;
-	const unsigned int Y_SEGMENTS = 512;
-
-	const float PI = 3.14159265359;
-	for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+	glm::mat4 captureProjection = glm::perspective(my_Pi_2, 1.0, 0.1, 10.0);
+	glm::mat4 captureViews[] =
 	{
-		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-		{
-			float xSegment = (float)x / (float)X_SEGMENTS;
-			float ySegment = (float)y / (float)Y_SEGMENTS;
-			float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-			float yPos = std::cos(ySegment * PI);
-			float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
 
-			positions.push_back(glm::vec3(xPos, yPos, zPos));
-			UVs.push_back(glm::vec2(xSegment, ySegment));
-			normals.push_back(glm::vec3(xPos, yPos, zPos));
-		}
-	}
-
-	bool oddRow = false;
-	for (int y = 0; y < Y_SEGMENTS; ++y)
-	{
-		if (!oddRow) // even rows: y == 0, y == 2; and so on
-		{
-			for (int x = 0; x <= X_SEGMENTS; ++x)
-			{
-				indices.push_back(y       * (X_SEGMENTS + 1) + x);
-				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-			}
-		}
-		else
-		{
-			for (int x = X_SEGMENTS; x >= 0; --x)
-			{
-				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-				indices.push_back(y       * (X_SEGMENTS + 1) + x);
-			}
-		}
-		oddRow = !oddRow;
-	}
-	indexCount = indices.size();
-
-	std::vector<float> data;
-	for (int i = 0; i < positions.size(); ++i)
-	{
-		data.push_back(positions[i].x);
-		data.push_back(positions[i].y);
-		data.push_back(positions[i].z);
-		if (UVs.size() > 0)
-		{
-			data.push_back(UVs[i].x);
-			data.push_back(UVs[i].y);
-		}
-		if (normals.size() > 0)
-		{
-			data.push_back(normals[i].x);
-			data.push_back(normals[i].y);
-			data.push_back(normals[i].z);
-		}
-	}
-
-	glGenVertexArrays(1, &sphereVAO);
-	glGenBuffers(1, &sphereVBO);
-	glGenBuffers(1, &sphereEBO);
-	glBindVertexArray(sphereVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
-	glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-	float stride = (3 + 2 + 3) * sizeof(float);
+	unsigned int cubeVAO, cubeVBO, quadVAO, quadVBO;
+	
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &cubeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+	glBindVertexArray(cubeVAO);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
-	unsigned int albedo = TextureFromFile("rustediron2_basecolor.png", "./res/textures", false);
-	unsigned int metalness = TextureFromFile("rustediron2_metallic.png", "./res/textures", false);
-	unsigned int normal = TextureFromFile("rustediron2_normal.png", "./res/textures", false);
-	unsigned int roughness = TextureFromFile("rustediron2_roughness.png", "./res/textures", false);
-	unsigned int ao = TextureFromFile("rustediron2_ao.png", "./res/textures", false);
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	unsigned int AlbedoTexture = TextureFromFile("Cerberus_A.tga", "./res/models/Cerberus/Textures", true);
+	unsigned int NormalTexture = TextureFromFile("Cerberus_N.tga", "./res/models/Cerberus/Textures", true);
+	unsigned int MetallicTexture = TextureFromFile("Cerberus_M.tga", "./res/models/Cerberus/Textures", true);
+	unsigned int RoughnessTexture = TextureFromFile("Cerberus_R.tga", "./res/models/Cerberus/Textures", true);
+	unsigned int AOTexture = TextureFromFile("Cerberus_O.jpg", "./res/models/Cerberus/Textures", true);
+
+    glViewport(0, 0, frameWidth, frameHeight);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	unsigned int captureFBO;
+	unsigned int captureRBO;
+	glGenFramebuffers(1, &captureFBO);
+	glGenRenderbuffers(1, &captureRBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+	//Here we load our hdr texture
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, nrOfComponents;
+	float *data = stbi_loadf("./res/textures/Beach.hdr", &width, &height, &nrOfComponents, 0);
+	unsigned int hdrTexture;
+	if (data)
+	{
+		glGenTextures(1, &hdrTexture);
+		glBindTexture(GL_TEXTURE_2D, hdrTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else {
+		std::cout << "Failed to load HDR image." << std::endl;
+	}
+
+	//Transform hdr 2D texture to cubemap
+	unsigned int envCubemap;
+	glGenTextures(1, &envCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 2048, 2048, 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	shaderManager::setAndUse("ETC");
+	shaderManager::setInt("equirectangularMap", 0);
+	shaderManager::setMat4("projection", glm::value_ptr(captureProjection));
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+
+	glViewport(0, 0, 2048, 2048);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		shaderManager::setMat4("view", glm::value_ptr(captureViews[i]));
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	//Calculate the irradiance cubemap
+	unsigned int irradianceMap;
+	glGenTextures(1, &irradianceMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
+
+	shaderManager::setAndUse("IC");
+	shaderManager::setInt("environmentMap", 0);
+	shaderManager::setMat4("projection", glm::value_ptr(captureProjection));
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+
+	glViewport(0, 0, 32, 32);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		shaderManager::setMat4("view", glm::value_ptr(captureViews[i]));
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+	}
+
+	//Calculate prefilter map
+	unsigned int prefilterMap;
+	glGenTextures(1, &prefilterMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	shaderManager::setAndUse("PF");
+	shaderManager::setInt("environmentMap", 0);
+	shaderManager::setMat4("projection", glm::value_ptr(captureProjection));
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	unsigned int maxMipLevels = 5;
+	for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
+	{
+		unsigned int mipWidth = 128 * std::pow(0.5, mip);
+		unsigned int mipHeight = 128 * std::pow(0.5, mip);
+		glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+		glViewport(0, 0, mipWidth, mipHeight);
+
+		float roughness = float(mip) / float(maxMipLevels - 1);
+		shaderManager::setFloat("roughness", roughness);
+		for (unsigned int i = 0; i < 6; ++i)
+		{
+			shaderManager::setMat4("view", glm::value_ptr(captureViews[i]));
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glBindVertexArray(cubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+		}
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	unsigned int brdfLUTTexture;
+	glGenTextures(1, &brdfLUTTexture);
+
+	glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+
+	glViewport(0, 0, 512, 512);
+	shaderManager::setAndUse("BRDF");
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glm::vec3 lightPositions[] = {
 		glm::vec3(-10.0f,  10.0f, 10.0f),
@@ -200,24 +336,25 @@ int main()
 		glm::vec3(300.0f, 300.0f, 300.0f)
 	};
 
-	int nrRows = 7;
-	int nrColumns = 7;
-	float spacing = 2.5;
+	shaderManager::setAndUse("PBR");
+	shaderManager::setInt("irradianceMap", 0);
+	shaderManager::setInt("prefilterMap", 1);
+	shaderManager::setInt("brdfLUT", 2);
+	shaderManager::setInt("albedoMap", 3);
+	shaderManager::setInt("normalMap", 4);
+	shaderManager::setInt("metallicMap", 5);
+	shaderManager::setInt("roughnessMap", 6);
+	shaderManager::setInt("aoMap", 7);
+	shaderManager::setAndUse("BG");
+	shaderManager::setInt("environmentMap", 0);
 
-    glViewport(0, 0, frameWidth, frameHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
+	glViewport(0, 0, frameWidth, frameHeight);
 
     static float deltaT = 0.0f;
     static float currentFrame = 0.0f;
     static float previousFrame = 0.0f;
 
-	shaderManager::setAndUse("PBR");
-	shaderManager::setInt("albedoMap", 0);
-	shaderManager::setInt("normalMap", 1);
-	shaderManager::setInt("metallicMap", 2);
-	shaderManager::setInt("roughnessMap", 3);
-	shaderManager::setInt("aoMap", 4);
+	std::cout << "Entering game loop" << std::endl;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -227,7 +364,7 @@ int main()
 
         processInput(window);
 
-        glm::mat4 projection = cam->getProjection();;
+		glm::mat4 projection = cam->getProjection();
         glm::mat4 view = cam->getViewMatrix();
         glm::vec3 camPos = cam->getPosition();
         glm::mat4 model(1.0f);
@@ -235,44 +372,52 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderManager::setAndUse("PBR");
-        shaderManager::setMat4("projection", glm::value_ptr(projection));
+		shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
+		model = glm::translate(model, glm::vec3(-5.0, 0.0, 0.0));
+		model = glm::rotate(model, float(-my_Pi_2), glm::vec3(1.0, 0.0, 0.0f));
+		model = glm::rotate(model, float(my_Pi_2), glm::vec3(0.0, 0.0, 1.0f));
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		shaderManager::setMat4("model", glm::value_ptr(model));
+		glm::mat3 normal = getNormalMatrix(model);
+		shaderManager::setMat3("normal", glm::value_ptr(normal));
 		shaderManager::setVec3("camPos", glm::value_ptr(camPos));
-		shaderManager::setVec3("constAlbedo", 0.5f, 0.0f, 0.0f);
-		shaderManager::setFloat("constAo", 1.0f);
-		shaderManager::setFloat("worldWidth", frameWidth);
 
-		for (unsigned int i = 0; i < 4; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
-			shaderManager::setVec3("lightPositions[" + std::to_string(i) + "]", glm::value_ptr(lightPositions[i]));
 			shaderManager::setVec3("lightColors[" + std::to_string(i) + "]", glm::value_ptr(lightColors[i]));
-		}
-		shaderManager::setInt("useTextures", drawTextures);
-		if (drawTextures)
-		{
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, albedo);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, normal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, metalness);
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, roughness);
-			glActiveTexture(GL_TEXTURE4);
-			glBindTexture(GL_TEXTURE_2D, ao);
+			shaderManager::setVec3("lightPositions[" + std::to_string(i) + "]", glm::value_ptr(lightPositions[i]));
 		}
 
-		for (unsigned int i = 0; i < nrRows; i++)
-			for (unsigned int j = 0; j < nrColumns; j++)
-			{
-				shaderManager::setFloat("constMetallic", (float(j) + float(i) * float(nrColumns)) / (float(nrRows) * float(nrColumns)));
-				shaderManager::setFloat("constRoughness", glm::clamp((float(j) + float(i) * float(nrColumns)) / (float(nrRows) * float(nrColumns)), 0.05f, 1.0f));
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(i * spacing, j * spacing, 0.0));
-				shaderManager::setMat4("model", glm::value_ptr(model));
-				glBindVertexArray(sphereVAO);
-				glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
-			}
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, AlbedoTexture);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, NormalTexture);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, MetallicTexture);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, RoughnessTexture);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, AOTexture);
+
+        cerberus.DrawTextureless("PBR");
+
+		shaderManager::setAndUse("BG");
+		shaderManager::setMat4("view", glm::value_ptr(view));
+		shaderManager::setMat4("projection", glm::value_ptr(projection));
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
         cam->orthogonize();
 
@@ -331,8 +476,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cam->adjustSpeed(2.0);
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         cam->adjustSpeed(0.5);
-	if (key == GLFW_KEY_C && action == GLFW_PRESS)
-		drawTextures = !drawTextures;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)

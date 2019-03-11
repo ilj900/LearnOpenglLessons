@@ -31,6 +31,7 @@ public:
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
     void Draw(std::string programName);
+	void DrawTextureless(std::string programName);
     void Draw(std::string programName, unsigned int nrOfInstances);
 
 private:

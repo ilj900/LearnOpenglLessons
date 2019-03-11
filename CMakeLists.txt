@@ -24,11 +24,16 @@ set(INCLUDES    include/glfw3.h
                 include/mesh.h
                 include/textOutput.h
                 include/stb_image.h)
-set(RESOURCES       res/shaders/pbr.fragment.shader           res/shaders/pbr.fragment.shader)
+set(RESOURCES       res/shaders/pbr.vertex.shader             res/shaders/pbr.fragment.shader
+					res/shaders/test.vertex.shader            res/shaders/test.fragment.shader
+                    res/shaders/background.vertex.shader      res/shaders/background.fragment.shader
+                    res/shaders/brdf.vertex.shader            res/shaders/brdf.fragment.shader
+                    res/shaders/cubemap.vertex.shader
+                                                              res/shaders/prefilter.fragment.shader
+                                                              res/shaders/irradiance_convolution.fragment.shader
+                                                              res/shaders/equirectangular_to_cubemap.fragment.shader)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 
 add_executable(Lessons ${SOURCES} ${INCLUDES} ${RESOURCES})
 target_link_libraries(Lessons glfw3.lib freetyped.lib assimp-vc140-mtd.dll)
-
-
