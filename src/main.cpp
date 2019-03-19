@@ -44,6 +44,7 @@ static float desiredFrameLength = 1000.0f/60.0f;
 static float movementSpeed = 4.5f;
 static unsigned int currentBG = 0;
 static unsigned int environmentsCount = 0;
+static bool ibl = true;
 
 int main()
 {
@@ -391,6 +392,7 @@ int main()
         shaderManager::setAndUse("PBR");
         shaderManager::setMat4("projection", glm::value_ptr(projection));
         shaderManager::setMat4("view", glm::value_ptr(view));
+        shaderManager::setBool("ibl", ibl);
         model = glm::translate(model, glm::vec3(-5.0, 0.0, 0.0));
         model = glm::rotate(model, float(-my_Pi_2), glm::vec3(1.0, 0.0, 0.0f));
         model = glm::rotate(model, float(my_Pi_2), glm::vec3(0.0, 0.0, 1.0f));
@@ -481,7 +483,7 @@ void processInput(GLFWwindow *window)
         cam->rotate(0.0f, 0.0f, deltaT * movementSpeed*0.2f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         cam->rotate(0.0f, 0.0f, -deltaT * movementSpeed*0.2f);
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
         cam->instantMove(glm::vec3(0.0f, 2.5f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
@@ -497,6 +499,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         currentBG = (currentBG+1) % environmentsCount;
     if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
         currentBG = (currentBG -1 + environmentsCount)%environmentsCount;
+    if (key == GLFW_KEY_I && action == GLFW_PRESS)
+        ibl = !ibl;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)

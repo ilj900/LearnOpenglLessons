@@ -20,6 +20,8 @@ uniform sampler2D brdfLUT;
 uniform vec3 lightPositions[4];
 uniform vec3 lightColors[4];
 
+uniform bool ibl;
+
 uniform vec3 camPos;
 
 const float PI = 3.14159265359;
@@ -97,6 +99,10 @@ void main()
 	vec3 V = normalize(camPos - WorldPos);
 	vec3 R = reflect(-V, N);
  
+        vec3 color = vec3(0.0);
+
+        if (ibl)
+        {
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo, metallic);
 
@@ -142,11 +148,12 @@ void main()
 
 	vec3 ambient = (kD * diffuse + specular) * ao;
 
-	vec3 color = ambient + Lo;
+        color = ambient + Lo;
 
 	color = color / (color + vec3(1.0));
 
 	color = pow(color, vec3(1.0 / 2.2));
+        }
 
 	FragColor = vec4(color, 1.0);
 }
